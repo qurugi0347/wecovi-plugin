@@ -1,0 +1,11 @@
+<idea-plugin>
+  <id>com.wecovi.plugin</id>
+  <name>Wecovi</name>
+  <vendor email="dev@wecovi.com" url="https://wecovi.com">Wecovi</vendor>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <description><![CDATA[
+    Wecovi tools for WebStorm.
+  ]]></description>
+</idea-plugin>
