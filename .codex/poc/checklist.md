@@ -42,7 +42,7 @@ status: confirmed
 ### T03. Covi metadata 탐색
 
 - [x] `@covi-root`, `@covi`, `@covi-group`, description 파싱
-- [x] root의 implicit covi, `Ungrouped`, 이름 있는 arrow 처리
+- [x] root의 implicit covi, 빈 `groupPath`, 이름 있는 arrow 처리
 - [x] Flows/Functions index 결과 검증
 - [x] `./gradlew test --tests '*CoviMetadataIndexerTest'` 통과
 - [x] 전체 회귀 통과
@@ -90,7 +90,7 @@ status: confirmed
 
 ### T08. Flows/Functions와 Flow Canvas
 
-- [ ] Flows/Functions 목록 component
+- [ ] Kotlin `JBTree` Flows/Functions 목록
 - [ ] 읽기 전용 세로 Flow Canvas와 boundary badge
 - [ ] internal node 펼치기 요청과 중첩 rendering
 - [ ] `Cmd/Ctrl + 클릭` source 이동 message

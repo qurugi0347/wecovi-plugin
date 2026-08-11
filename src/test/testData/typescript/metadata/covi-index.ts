@@ -18,6 +18,15 @@ export function validateEmail(email: string): boolean {
   return email.includes("@");
 }
 
+/** @covi 그룹 없는 보조 함수 */
+export function archiveUser(): void {}
+
+/** @covi 같은 이름의 첫 번째 함수 */
+function duplicateUser(): void {}
+
+/** @covi 같은 이름의 두 번째 함수 */
+function duplicateUser(): void {}
+
 /**
  * 관리자 등록
  * @covi-root

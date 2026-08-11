@@ -14,20 +14,26 @@ class CoviMetadataIndexerTest : BasePlatformTestCase() {
         // When: the Covi metadata index is built from the TypeScript PSI.
         val index = CoviMetadataIndexer().index(typeScriptFile, typeScriptFile.virtualFile.parent.parent)
 
-        // Then: roots are also functions, groups are split, and undocumented functions are not listed.
+        // Then: roots are also functions, empty groups stay empty, and undocumented functions are not listed.
         assertEquals(listOf("registerAdmin", "signup"), index.flows.map { it.functionName })
-        assertEquals(listOf("validateEmail", "registerAdmin", "signup", "createUser"), index.functions.map { it.functionName })
+        assertEquals(
+            listOf("duplicateUser", "duplicateUser", "archiveUser", "validateEmail", "registerAdmin", "signup", "createUser"),
+            index.functions.map { it.functionName },
+        )
 
         val signup = index.flows.single { it.functionName == "signup" }
         assertEquals("사용자 API 가입", signup.title)
         assertEquals(listOf("User API", "User"), signup.groupPath)
-        assertEquals("metadata/covi-index.ts#signup", signup.symbolId)
+        assertEquals("metadata/covi-index.ts#signup@0", signup.symbolId)
         assertTrue(signup.sourceLocation.startOffset >= 0)
         assertTrue(signup.sourceLocation.endOffset > signup.sourceLocation.startOffset)
 
         val createUser = index.functions.single { it.functionName == "createUser" }
         assertEquals("사용자를 생성한다", createUser.title)
         assertFalse(createUser.isRoot)
+        assertEquals(emptyList<String>(), index.functions.single { it.functionName == "archiveUser" }.groupPath)
+        assertEquals(2, index.functions.count { it.functionName == "duplicateUser" })
+        assertEquals(2, index.functions.filter { it.functionName == "duplicateUser" }.map { it.symbolId }.toSet().size)
         assertFalse(index.functions.any { it.functionName == "undocumentedHelper" })
     }
 

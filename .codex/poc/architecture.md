@@ -23,7 +23,7 @@ TypeScript PSI
   → FlowService
   → FlowDocument JSON
   → JCEF typed bridge
-  → React Flows · Functions · nested Flow Canvas
+  → Kotlin JBTree Flows · Functions + React nested Flow Canvas
 ```
 
 DB 변경 없음. 별도 API 서버나 영속 저장소를 추가하지 않는다.
