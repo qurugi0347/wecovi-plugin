@@ -9,6 +9,7 @@ WebStorm / Kotlin
 ├─ TypeScript PSI 분석
 ├─ 호출 대상 탐색과 소스 편집
 ├─ 프로젝트 설정과 저장 이벤트
+├─ Flows/Functions Tool Window (JBTree)
 └─ JCEF message bridge
      ↕ typed JSON messages
 React / Vite
@@ -49,11 +50,12 @@ React에서 Kotlin으로 보내는 요청은 JCEF JavaScript query를 사용하�
 
 ## IDE UI 통합
 
-- 왼쪽 Tool Window에서 Flows와 Functions를 탐색한다.
-- Flow Canvas는 중앙 Editor Tab에 연다.
-- 오른쪽 Inspector는 선택한 노드의 Covi와 코드 정보를 보여준다.
+- Flows와 Functions 목록은 Kotlin `JBTree`가 담당해 IDE의 키보드 탐색, 선택, theme와 접근성 동작을 재사용한다.
+- Flow Canvas와 Inspector는 하나의 JCEF/React Editor Tab에서 호스팅한다.
 - WebStorm의 light/dark theme와 editor font를 React CSS 변수에 전달한다.
 - 플러그인 전용 theme와 별도 창은 첫 버전에서 만들지 않는다.
+
+화면의 좌·중앙·우 배치와 사용 조작은 [UX/UI 기획](../ux-ui/flow-visualization.md)을 기준으로 한다.
 
 ## TypeScript 분석 범위
 
@@ -79,7 +81,7 @@ React에서 Kotlin으로 보내는 요청은 JCEF JavaScript query를 사용하�
 **/__tests__/**
 ```
 
-사용자는 프로젝트 설정에서 include와 exclude pattern을 수정할 수 있다. exclude가 include보다 우선하며, 변경 후 메뉴와 열려 있는 flow를 다시 분석한다. 테스트 코드를 보고 싶은 사용자는 관련 exclude pattern을 제거해 포함할 수 있다.
+사용자는 WebStorm Project Settings에서 include와 exclude pattern을 수정할 수 있다. 설정은 IntelliJ의 project-level 설정 저장 방식을 사용하며 별도 `.wecovi.json` 파일은 만들지 않는다. exclude가 include보다 우선하며, 변경 후 메뉴와 열려 있는 flow를 다시 분석한다. 테스트 코드를 보고 싶은 사용자는 관련 exclude pattern을 제거해 포함할 수 있다.
 
 첫 버전은 TypeScript PSI가 확인할 수 있는 정적 정보만 사용한다. NestJS 전용 규칙 없이 `@covi-root`가 붙은 일반 함수부터 분석하므로 다른 TypeScript 프레임워크에서도 같은 방식으로 사용할 수 있다.
 
