@@ -18,11 +18,17 @@ Wecovi는 TypeScript 코드를 파일 단위가 아니라 기능의 실행 흐�
    - 문서 색인과 현재 기획 상태를 확인한다.
 3. `docs/poc-scope-and-milestones.md`
    - POC 필수 범위, 정확성 원칙, 현재 작업이 속한 마일스톤과 완료 조건을 확인한다.
-4. 작업 종류에 맞는 상세 문서
+4. POC 구현 작업이면 `.codex/poc/` 문서
+   - `architecture.md`에서 전체 작업 방향을 빠르게 파악한다.
+   - `context.md`에서 사용자 결정, 저장소 상태와 기술 제약을 확인한다.
+   - `plan.md`에서 현재 Task의 구현 대상, 의존성과 완료 기준을 읽는다.
+   - `checklist.md`에서 완료된 Task와 다음 미완료 Task를 확인한다.
+   - 테스트를 작성·수정하면 `test-code-plan.md`의 대상 파일과 Given/When/Then을 확인한다.
+5. 작업 종류에 맞는 상세 문서
    - 제품 목적·지원 범위·성공 기준: `docs/purpose/plugin-purpose.md`
    - UI 구조·노드 표현·탐색 동작: `docs/ux-ui/flow-visualization.md`
    - Kotlin/JCEF/React 구성·분석 정책·갱신 정책: `docs/architecture/plugin-architecture.md`
-5. 관련 소스와 빌드 설정
+6. 관련 소스와 빌드 설정
    - 플러그인 설정: `src/main/resources/META-INF/plugin.xml`
    - Gradle과 WebStorm SDK 설정: `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`
    - 구현 파일이 추가되면 문서에서 확인한 범위와 직접 관련된 소스부터 탐색한다.
@@ -31,9 +37,9 @@ Wecovi는 TypeScript 코드를 파일 단위가 아니라 기능의 실행 흐�
 
 | 작업 | 먼저 읽을 문서 |
 | --- | --- |
-| POC 기능 구현 또는 테스트 | `docs/poc-scope-and-milestones.md` → 해당 기능의 UX 또는 아키텍처 문서 |
-| TypeScript PSI 분석 | POC 문서 → `docs/architecture/plugin-architecture.md` → UX 문서의 분석 경계와 노드 규칙 |
-| Flow Canvas와 Tool Window UI | POC 문서 → `docs/ux-ui/flow-visualization.md` → 아키텍처 문서의 IDE 통합과 message bridge |
+| POC 기능 구현 또는 테스트 | POC 문서 → `.codex/poc/architecture.md` → `plan.md`의 대상 Task → `checklist.md` → 관련 상세 문서 |
+| TypeScript PSI 분석 | POC 문서 → plan의 대상 Task → `test-code-plan.md` → 아키텍처 문서 → UX 문서의 분석 경계와 노드 규칙 |
+| Flow Canvas와 Tool Window UI | POC 문서 → plan의 대상 Task → `test-code-plan.md` → UX 문서 → 아키텍처 문서의 IDE 통합과 message bridge |
 | 제품 범위 또는 성공 기준 변경 | `docs/purpose/plugin-purpose.md` → POC 문서 → 영향받는 UX·아키텍처 문서 |
 | Covi 메타데이터 작업 | POC 문서의 후속 작업 여부 확인 → UX 문서의 메타데이터·Inspector 규칙 |
 | 빌드·플러그인 설정 | 루트 `README.md` → 아키텍처 문서 → Gradle 및 `plugin.xml` |
@@ -46,8 +52,9 @@ Wecovi는 TypeScript 코드를 파일 단위가 아니라 기능의 실행 흐�
 1. 사용자의 현재 결정과 요청
 2. `AGENTS.md`의 작업 절차
 3. POC 작업에서는 `docs/poc-scope-and-milestones.md`
-4. 작업 영역별 상세 문서
-5. `docs/README.md`와 루트 `README.md`의 요약
+4. 승인된 `.codex/poc/`의 현재 Task 범위와 설계 결정
+5. 작업 영역별 상세 문서
+6. `docs/README.md`와 루트 `README.md`의 요약
 
 POC 문서와 상세 문서가 충돌하면 POC 문서를 현재 범위의 기준으로 사용하고, 같은 변경 안에서 상세 문서도 함께 고친다. 제품 목적 자체와 충돌하거나 어느 쪽이 최신 결정인지 판단할 수 없으면 구현 전에 사용자에게 확인한다.
 
