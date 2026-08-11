@@ -1,0 +1,89 @@
+{
+    "formatVersion": 1,
+    "root": {
+        "symbolId": "src/user/signup.ts#signup",
+        "title": "회원가입",
+        "functionName": "signup",
+        "groupPath": [
+            "User API",
+            "User"
+        ],
+        "sourceLocation": {
+            "path": "src/user/signup.ts",
+            "startOffset": 0,
+            "endOffset": 440
+        },
+        "isRoot": true
+    },
+    "nodes": [
+        {
+            "id": "src/user/signup.ts#signup:call:createUser",
+            "kind": "call",
+            "label": "사용자 생성",
+            "codeExpression": "await createUser(dto)",
+            "signature": "createUser(dto: SignupDto): Promise<User>",
+            "sourceLocation": {
+                "path": "src/user/signup.ts",
+                "startOffset": 82,
+                "endOffset": 107
+            },
+            "targetSymbolId": "src/user/create-user.ts#createUser",
+            "boundaryKind": null,
+            "isDocumented": false,
+            "children": [
+                {
+                    "id": "src/user/signup.ts#signup:call:createUser:return",
+                    "kind": "return",
+                    "label": "생성한 사용자 반환",
+                    "codeExpression": "return user",
+                    "signature": null,
+                    "sourceLocation": {
+                        "path": "src/user/create-user.ts",
+                        "startOffset": 150,
+                        "endOffset": 161
+                    },
+                    "targetSymbolId": null,
+                    "boundaryKind": null,
+                    "isDocumented": false,
+                    "children": [],
+                    "expandable": false
+                }
+            ],
+            "expandable": true
+        },
+        {
+            "id": "src/user/signup.ts#signup:call:bcryptHash",
+            "kind": "call",
+            "label": "bcrypt.hash",
+            "codeExpression": "await bcrypt.hash(dto.password, 10)",
+            "signature": "hash(data: string, saltOrRounds: number): Promise<string>",
+            "sourceLocation": {
+                "path": "src/user/signup.ts",
+                "startOffset": 132,
+                "endOffset": 167
+            },
+            "targetSymbolId": null,
+            "boundaryKind": "external",
+            "isDocumented": true,
+            "children": [],
+            "expandable": false
+        },
+        {
+            "id": "src/user/signup.ts#signup:call:notification",
+            "kind": "call",
+            "label": "알림 전송",
+            "codeExpression": "await notifier[channel](user)",
+            "signature": null,
+            "sourceLocation": {
+                "path": "src/user/signup.ts",
+                "startOffset": 198,
+                "endOffset": 228
+            },
+            "targetSymbolId": null,
+            "boundaryKind": "unresolved",
+            "isDocumented": false,
+            "children": [],
+            "expandable": false
+        }
+    ]
+}

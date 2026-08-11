@@ -2,6 +2,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     kotlin("jvm") version "2.3.10"
+    kotlin("plugin.serialization") version "2.3.10"
     id("org.jetbrains.intellij.platform") version "2.18.1"
 }
 
@@ -22,6 +23,10 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
+    }
     testImplementation("junit:junit:4.13.2")
 
     intellijPlatform {
@@ -29,6 +34,11 @@ dependencies {
         bundledPlugin("JavaScript")
         testFramework(TestFrameworkType.Platform)
     }
+}
+
+configurations.runtimeClasspath {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
 }
 
 kotlin {
@@ -41,6 +51,7 @@ kotlin {
 
 tasks.test {
     systemProperty("idea.load.plugins.id", "JavaScript")
+    systemProperty("wecovi.projectDir", projectDir.absolutePath)
 }
 
 intellijPlatform {

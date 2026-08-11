@@ -29,13 +29,13 @@ status: confirmed
 
 ### T02. Flow contract
 
-- [ ] `FlowIndexEntry`, `FlowDocument`, `FlowNode` 정의
-- [ ] node kind, boundary kind, source location 정의
-- [ ] JSON 직렬화 및 역직렬화 정의
-- [ ] Kotlin/React 공용 `basic-flow.json` golden fixture 작성
-- [ ] `./gradlew test --tests '*FlowContractTest'` 통과
-- [ ] 전체 회귀 통과
-- [ ] Task 단위 커밋
+- [x] `FlowIndexEntry`, `FlowDocument`, `FlowNode` 정의
+- [x] node kind, boundary kind, source location 정의
+- [x] JSON 직렬화 및 역직렬화 정의
+- [x] Kotlin/React 공용 `basic-flow.json` golden fixture 작성
+- [x] `./gradlew test --tests '*FlowContractTest'` 통과
+- [x] 전체 회귀 통과
+- [x] Task 단위 커밋
 
 ## Phase 2. M1 기본 호출 흐름
 
