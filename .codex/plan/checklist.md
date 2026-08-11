@@ -54,15 +54,15 @@ status: confirmed
 
 ### P2-03. T05 호출 경계 resolver
 
-- [ ] 같은 project content의 단일 resolved target만 internal로 연결한다.
-- [ ] library target은 `External` terminal boundary다.
-- [ ] 미해결·동적 호출은 원문과 `Unresolved` terminal boundary다.
-- [ ] boundary node는 expandable하지 않다.
-- [ ] 추정 edge를 생성하지 않는다.
-- [ ] target Covi metadata가 없으면 `isDocumented=false`를 설정한다.
-- [ ] 같은 이름만 가진 다른 함수를 target으로 연결하지 않는다.
-- [ ] `./gradlew test --tests '*CallTargetResolverTest'`를 통과한다.
-- [ ] 기존 `./gradlew test` 회귀를 통과한다.
+- [x] 같은 project content의 단일 resolved target만 internal로 연결한다.
+- [x] library target은 `External` terminal boundary다.
+- [x] 미해결·동적 호출은 원문과 `Unresolved` terminal boundary다.
+- [x] boundary node는 expandable하지 않다.
+- [x] 추정 edge를 생성하지 않는다.
+- [x] target Covi metadata가 없으면 `isDocumented=false`를 설정한다.
+- [x] 같은 이름만 가진 다른 함수를 target으로 연결하지 않는다.
+- [x] `./gradlew test --tests '*CallTargetResolverTest'`를 통과한다.
+- [x] 기존 `./gradlew test` 회귀를 통과한다.
 
 ### P2-04. T06 FlowService와 지연 펼치기
 
