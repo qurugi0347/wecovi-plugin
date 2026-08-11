@@ -37,11 +37,13 @@ React Flow 같은 graph 라이브러리는 첫 버전에 추가하지 않는다.
 
 localhost 서버나 임시 파일 없이 JCEF message bridge를 사용한다.
 
-- React → Kotlin: flow 요청, Covi 저장, 소스 열기, interface 구현체 선택
+- React → Kotlin: flow 요청, Covi 저장, 소스 열기
 - Kotlin → React: 분석 결과, 저장 결과, theme 변경, flow 갱신
 - 메시지 기본 형태: `{ type, requestId?, payload }`
 - Kotlin은 허용한 message type과 payload만 검증해 처리한다.
 - React는 임의의 로컬 파일이나 Kotlin API에 직접 접근하지 않는다.
+
+POC에서는 flow 요청과 소스 열기를 우선 구현한다. Covi 저장과 interface 구현체 선택은 POC 이후 후속 범위로 둔다.
 
 React에서 Kotlin으로 보내는 요청은 JCEF JavaScript query를 사용하고, Kotlin에서 React로 보내는 알림은 페이지에 주입한 event를 사용한다. 구체적인 message 목록은 실제 기능을 구현할 때 필요한 항목만 추가한다.
 

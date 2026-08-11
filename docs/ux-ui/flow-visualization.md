@@ -169,7 +169,7 @@ Signature: hash(data, saltOrRounds): Promise<string>
 | `Unresolved` | 정적 분석으로 호출 대상을 찾지 못함 |
 | `External` | 프로젝트 밖 라이브러리 호출 |
 | `Undocumented` | 프로젝트 함수지만 Covi 설명이 없음 |
-| `Multiple` | 가능한 구현체가 여러 개임 |
+| `Multiple` | 구현체 후보가 여러 개여서 호출 대상을 확정하지 못함 |
 | `Recursive` | 이미 펼친 함수를 다시 호출하는 순환 참조 |
 
 예를 들어 호출 대상을 찾지 못하면 `handler(payload)` 원문과 `Unresolved` badge를 함께 표시한다.
@@ -181,6 +181,8 @@ getter, setter와 constructor는 별도의 상세 flow 대신 선언부의 한 �
 ## Inspector
 
 Inspector는 편집 가능한 정보와 코드에서 추출한 사실 정보를 분리한다.
+
+POC에서는 Flows/Functions 목록, Flow Canvas, 노드 펼치기와 원본 코드 이동까지만 필수로 구현한다. 아래 Covi 편집, 소스 저장과 Undo 연동은 POC 완료 후 후속 작업으로 진행한다.
 
 ### 편집 가능한 Covi 정보
 
@@ -227,12 +229,14 @@ Inspector 최하단에는 함수 전체 원문을 읽기 전용으로 보여준�
 - 프로젝트 내부 함수는 Covi 설명이 없어도 호출 관계를 계속 추적한다.
 - 외부 라이브러리는 signature 경계에서 멈춘다.
 - interface의 구현체가 하나면 해당 구현으로 바로 연결한다.
-- interface의 구현체가 여러 개면 `Multiple`로 표시하고 사용자가 후보를 선택한 뒤 임시로 해당 흐름을 보여준다.
+- interface의 구현체가 여러 개면 `Multiple`로 표시하고 POC에서는 어떤 후보에도 연결하지 않는다.
 - interface의 구현체가 없으면 interface 정보까지만 보여준다.
 - 구현체 후보는 노드를 펼칠 때 지연 탐색한다.
 - `@Inject(TOKEN)`, factory provider, 조건부 provider처럼 런타임에 결정되는 DI는 `Runtime binding` 경계에서 멈춘다.
 - 런타임 값은 표시하지 않고 정적 타입과 코드 표현식만 표시한다.
 - 실제 코드에서 확인할 수 없는 호출 관계를 AI 추측으로 연결하지 않는다.
+
+다중 구현체 후보를 사용자가 선택해 임시 flow로 여는 기능은 POC 이후 검토한다.
 
 ## 갱신 정책
 
