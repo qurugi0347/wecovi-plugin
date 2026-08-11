@@ -41,12 +41,12 @@ status: confirmed
 
 ### T03. Covi metadata 탐색
 
-- [ ] `@covi-root`, `@covi`, `@covi-group`, description 파싱
-- [ ] root의 implicit covi, `Ungrouped`, 이름 있는 arrow 처리
-- [ ] Flows/Functions index 결과 검증
-- [ ] `./gradlew test --tests '*CoviMetadataIndexerTest'` 통과
-- [ ] 전체 회귀 통과
-- [ ] Task 단위 커밋
+- [x] `@covi-root`, `@covi`, `@covi-group`, description 파싱
+- [x] root의 implicit covi, `Ungrouped`, 이름 있는 arrow 처리
+- [x] Flows/Functions index 결과 검증
+- [x] `./gradlew test --tests '*CoviMetadataIndexerTest'` 통과
+- [x] 전체 회귀 통과
+- [x] Task 단위 커밋
 
 ### T04. 기본 함수 본문 분석
 
