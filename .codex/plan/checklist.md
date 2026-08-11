@@ -37,20 +37,20 @@ status: confirmed
 
 ### P2-02. T04 기본 body analyzer
 
-- [ ] `FlowIndexEntry`에 optional root signature를 추가하고 contract fixture를 갱신한다.
-- [ ] function symbol ID가 path, name과 owner start offset을 포함한다.
-- [ ] node ID가 owner symbol ID, kind, start/end offset을 포함한다.
-- [ ] `TypeScriptFlowAnalyzer`가 top-level statement를 source order로 순회한다.
-- [ ] nested expression은 receiver/arguments부터 실제 평가 순서로 순회한다.
-- [ ] 미지원 조건·반복·예외 subtree와 nested function/callback body에는 내려가지 않는다.
-- [ ] call, construct, 독립 await와 return node를 생성한다.
-- [ ] await call은 call/construct node 하나로 표현한다.
-- [ ] 인자 원문, signature, return type과 source location을 채운다.
-- [ ] `outer(inner())`, `new User(loadDto())`, `return save()`의 평가 순서를 검증한다.
-- [ ] 조건문과 callback 내부 호출을 top-level 선형 flow로 만들지 않는다.
-- [ ] `./gradlew test --tests '*FlowContractTest'`를 통과한다.
-- [ ] `./gradlew test --tests '*TypeScriptFlowAnalyzerBasicTest'`를 통과한다.
-- [ ] 기존 `./gradlew test` 회귀를 통과한다.
+- [x] `FlowIndexEntry`에 optional root signature를 추가하고 contract fixture를 갱신한다.
+- [x] function symbol ID가 path, name과 owner start offset을 포함한다.
+- [x] node ID가 owner symbol ID, kind, start/end offset을 포함한다.
+- [x] `TypeScriptFlowAnalyzer`가 top-level statement를 source order로 순회한다.
+- [x] nested expression은 receiver/arguments부터 실제 평가 순서로 순회한다.
+- [x] 미지원 조건·반복·예외 subtree와 nested function/callback body에는 내려가지 않는다.
+- [x] call, construct, 독립 await와 return node를 생성한다.
+- [x] await call은 call/construct node 하나로 표현한다.
+- [x] 인자 원문, signature, return type과 source location을 채운다.
+- [x] `outer(inner())`, `new User(loadDto())`, `return save()`의 평가 순서를 검증한다.
+- [x] 조건문과 callback 내부 호출을 top-level 선형 flow로 만들지 않는다.
+- [x] `./gradlew test --tests '*FlowContractTest'`를 통과한다.
+- [x] `./gradlew test --tests '*TypeScriptFlowAnalyzerBasicTest'`를 통과한다.
+- [x] 기존 `./gradlew test` 회귀를 통과한다.
 
 ### P2-03. T05 호출 경계 resolver
 
