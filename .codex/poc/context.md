@@ -37,8 +37,8 @@ status: draft
 
 - 브랜치: `main`, context 수집 시 `origin/main`과 동기화 상태
 - 최근 기준 커밋: `9ec1f04 DOCS: POC 범위와 Agent 탐색 규칙 정리`
-- 구현 상태: Kotlin source, React project, 테스트 source가 아직 없다.
-- 존재하는 플러그인 골격: Gradle wrapper, IntelliJ Platform Gradle Plugin, WebStorm 2024.1.7, JDK 17, 최소 `plugin.xml`
+- 구현 상태: T01 TypeScript PSI smoke test 기반을 완료했고, production Kotlin source와 React project는 아직 없다.
+- 존재하는 플러그인 골격: Gradle wrapper, IntelliJ Platform Gradle Plugin, Kotlin/JVM 2.3.10, WebStorm 2024.1.7 JavaScript dependency, JDK 17, TypeScript PSI smoke test
 - 계획 작성 전 기존 `.codex/plan/`: 없음
 - DB/API/배포 서버: 없음
 

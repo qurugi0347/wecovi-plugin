@@ -4,6 +4,7 @@
   <vendor email="dev@wecovi.com" url="https://wecovi.com">Wecovi</vendor>
 
   <depends>com.intellij.modules.platform</depends>
+  <depends>JavaScript</depends>
 
   <description><![CDATA[
     Wecovi tools for WebStorm.

@@ -2,7 +2,7 @@
 name: wecovi-poc-checklist
 description: Wecovi POC T01~T16 실행과 빠른 검증 체크리스트
 created: 2026-08-11
-status: draft
+status: confirmed
 ---
 
 # Wecovi POC Checklist
@@ -13,19 +13,19 @@ status: draft
 - [x] 저장소 문서·코드·빌드 context 수집
 - [x] M1~M5를 빠르게 판정 가능한 Task로 분리
 - [x] 테스트 계획 초안 작성
-- [ ] 사용자가 `plan.md`와 `test-code-plan.md` 검수
-- [ ] 승인 후 문서 status를 `confirmed`로 변경
+- [x] 사용자가 `plan.md`와 `test-code-plan.md` 검수
+- [x] 승인 후 문서 status를 `confirmed`로 변경
 
 ## Phase 1. 검증 기반
 
 ### T01. Kotlin·TypeScript PSI 테스트 기반
 
-- [ ] Kotlin/JVM과 WebStorm JavaScript/TypeScript plugin 의존성 구성
-- [ ] IntelliJ Platform test framework와 test source set 구성
-- [ ] 최소 TypeScript PSI smoke fixture 작성
-- [ ] `./gradlew test --tests '*TypeScriptPsiSmokeTest'` 통과
-- [ ] `./gradlew test` 회귀 통과
-- [ ] Task 단위 커밋
+- [x] Kotlin/JVM과 WebStorm JavaScript/TypeScript plugin 의존성 구성
+- [x] IntelliJ Platform test framework와 test source set 구성
+- [x] 최소 TypeScript PSI smoke fixture 작성
+- [x] `./gradlew test --tests '*TypeScriptPsiSmokeTest'` 통과
+- [x] `./gradlew test` 회귀 통과
+- [x] Task 단위 커밋
 
 ### T02. Flow contract
 
