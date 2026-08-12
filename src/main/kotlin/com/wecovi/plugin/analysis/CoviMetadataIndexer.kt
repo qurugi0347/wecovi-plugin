@@ -49,7 +49,7 @@ class CoviMetadataIndexer {
         )
 
         return FlowIndexEntry(
-            symbolId = "$projectRelativePath#$functionName@${sourceLocation.startOffset}",
+            symbolId = flowSymbolId(projectRelativePath, function),
             title = title,
             functionName = functionName,
             groupPath = groupPath,

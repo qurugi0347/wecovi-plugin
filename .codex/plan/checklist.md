@@ -19,20 +19,20 @@ status: draft
 
 ### P3-01. Analysis scope와 `FlowService`
 
-- [ ] resolver의 content/exclude 규칙을 작은 `AnalysisScope`로 옮긴다.
-- [ ] `.ts`/`.tsx` project content만 index한다.
-- [ ] `node_modules`, `dist`, `build`, `generated`, `.d.ts`, `.test.*`, `.spec.*`, `__tests__`를 기본 제외한다.
-- [ ] indexer/resolver/service가 공용 `symbolId` helper를 사용한다.
-- [ ] Flows/Functions 결과를 group/title/function name 순으로 전역 정렬한다.
-- [ ] service는 호출자가 read action 안에서 실행하는 동기 list/analyze/expand API를 제공한다.
-- [ ] symbol ID를 파싱하지 않고 canonical ID 재생성 결과로 함수를 exact match한다.
-- [ ] root 분석은 현재 함수의 1단계 node만 반환한다.
-- [ ] internal node만 expand하며 external/unresolved 요청을 거부한다.
+- [x] resolver의 content/exclude 규칙을 작은 `AnalysisScope`로 옮긴다.
+- [x] `.ts`/`.tsx` project content만 index한다.
+- [x] `node_modules`, `dist`, `build`, `generated`, `.d.ts`, `.test.*`, `.spec.*`, `__tests__`를 기본 제외한다.
+- [x] indexer/resolver/service가 공용 `symbolId` helper를 사용한다.
+- [x] Flows/Functions 결과를 group/title/function name 순으로 전역 정렬한다.
+- [x] service는 호출자가 read action 안에서 실행하는 동기 list/analyze/expand API를 제공한다.
+- [x] symbol ID를 파싱하지 않고 canonical ID 재생성 결과로 함수를 exact match한다.
+- [x] root 분석은 현재 함수의 1단계 node만 반환한다.
+- [x] internal node만 expand하며 external/unresolved 요청을 거부한다.
 - [ ] 저장 후 재요청은 최신 PSI와 새 session mapping을 사용한다.
 - [ ] 삭제·변경된 symbol/node는 typed stale error로 끝난다.
-- [ ] 장기 cache/dependency graph를 추가하지 않는다.
-- [ ] `./gradlew compileKotlin`과 기존 `./gradlew test`를 통과한다.
-- [ ] `./gradlew test --tests '*FlowServiceTest'`를 통과한다.
+- [x] 장기 cache/dependency graph를 추가하지 않는다.
+- [x] `./gradlew compileKotlin`과 기존 `./gradlew test`를 통과한다.
+- [x] `./gradlew test --tests '*FlowServiceTest'`를 통과한다.
 
 ## Phase 2. T07 IDE shell과 bridge
 

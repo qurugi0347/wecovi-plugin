@@ -5,7 +5,6 @@ import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.psi.JSNewExpression
 import com.intellij.lang.javascript.psi.JSPsiReferenceElement
 import com.intellij.lang.javascript.psi.JSVariable
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
@@ -39,7 +38,7 @@ class CallTargetResolver {
 
         val function = targetFunction(target) ?: return unresolved(node)
         val path = VfsUtilCore.getRelativePath(targetFile, projectRoot, '/') ?: return unresolved(node)
-        val symbolId = "$path#${function.name ?: "unnamed"}@${function.textRange.startOffset}"
+        val symbolId = flowSymbolId(path, function)
         val isDocumented = CoviMetadataIndexer().index(function.containingFile, projectRoot).functions
             .any { entry -> entry.symbolId == symbolId }
 
@@ -51,12 +50,6 @@ class CallTargetResolver {
             signature = function.signature(),
         )
     }
-
-    private fun isProjectContent(targetFile: VirtualFile, file: PsiFile): Boolean =
-        ProjectFileIndex.getInstance(file.project).isInContent(targetFile) &&
-            !targetFile.name.endsWith(".d.ts") &&
-            !TEST_OR_SPEC_FILE.matches(targetFile.name) &&
-            generateSequence(targetFile.parent) { it.parent }.none { it.name == "__tests__" }
 
     private fun targetFunction(target: com.intellij.psi.PsiElement): JSFunction? = when (target) {
         is JSFunction -> target
@@ -71,7 +64,5 @@ class CallTargetResolver {
         expandable = false,
     )
 
-    private companion object {
-        val TEST_OR_SPEC_FILE = Regex(".*\\.(test|spec)\\.[^.]+$")
-    }
+    private fun isProjectContent(targetFile: VirtualFile, file: PsiFile) = isAnalysisSource(file.project, targetFile)
 }
