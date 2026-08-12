@@ -18,6 +18,7 @@ internal class FlowEditorSession(project: Project, private val symbolId: String)
 
     fun reload(): FlowDocument {
         val document = service.analyze(rootPointer ?: service.pointer(symbolId) ?: error("Stale flow"))
+        rootPointer = rootPointer ?: service.pointer(document.root.symbolId)
         generation += 1
         register(document.nodes, replace = true)
         return document
