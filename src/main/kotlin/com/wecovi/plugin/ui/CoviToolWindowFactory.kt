@@ -1,7 +1,9 @@
 package com.wecovi.plugin.ui
 
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBScrollPane
@@ -20,15 +22,19 @@ class CoviToolWindowFactory : ToolWindowFactory {
 
         tree.addTreeSelectionListener {
             (tree.lastSelectedPathComponent as? DefaultMutableTreeNode)?.userObject
-                ?.let { entry -> entry as? FlowIndexEntry }
-                ?.let { entry -> FileEditorManager.getInstance(project).openFile(FlowVirtualFile(entry), true) }
+                ?.let { item -> item as? FlowTreeItem }
+                ?.let { item -> openFlow(project, item.entry) }
         }
-        ApplicationManager.getApplication().runReadAction {
-            val service = FlowService(project)
-            root.add(category("Flows", service.listFlows()))
-            root.add(category("Functions", service.listFunctions()))
-            (tree.model as DefaultTreeModel).reload()
-        }
+        ReadAction.nonBlocking(java.util.concurrent.Callable<List<FlowIndexEntry>> { FlowService(project).listFunctions() })
+            .inSmartMode(project)
+            .expireWith(toolWindow.disposable)
+            .finishOnUiThread(ModalityState.any()) { functions ->
+                root.removeAllChildren()
+                root.add(category("Flows", functions.filter(FlowIndexEntry::isRoot)))
+                root.add(category("Functions", functions))
+                (tree.model as DefaultTreeModel).reload()
+            }
+            .submit(AppExecutorUtil.getAppExecutorService())
     }
 
     private fun category(name: String, entries: List<FlowIndexEntry>) = DefaultMutableTreeNode(name).apply {
@@ -44,6 +50,17 @@ class CoviToolWindowFactory : ToolWindowFactory {
                 .firstOrNull { it.userObject == group }
                 ?: DefaultMutableTreeNode(group).also(parent::add)
         }
-        parent.add(DefaultMutableTreeNode(entry))
+        parent.add(DefaultMutableTreeNode(FlowTreeItem(entry)))
+    }
+
+    private fun openFlow(project: com.intellij.openapi.project.Project, entry: FlowIndexEntry) {
+        val manager = FileEditorManager.getInstance(project)
+        val file = manager.openFiles.filterIsInstance<FlowVirtualFile>()
+            .firstOrNull { it.entry.symbolId == entry.symbolId } ?: FlowVirtualFile(entry)
+        manager.openFile(file, true)
+    }
+
+    private class FlowTreeItem(val entry: FlowIndexEntry) {
+        override fun toString() = entry.title
     }
 }
