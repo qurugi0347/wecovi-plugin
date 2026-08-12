@@ -24,6 +24,7 @@ class TypeScriptFlowAnalyzerBasicTest : BasePlatformTestCase() {
             listOf(FlowNodeKind.CALL, FlowNodeKind.CONSTRUCT, FlowNodeKind.CALL, FlowNodeKind.RETURN),
             document.nodes.map { it.kind },
         )
+        assertEquals("string", document.nodes.last().signature)
         assertTrue(document.nodes.all { it.id.startsWith("basic-flow/analyzer.ts#syncFlow@") })
     }
 
@@ -34,6 +35,9 @@ class TypeScriptFlowAnalyzerBasicTest : BasePlatformTestCase() {
         val asyncDocument = analyzer.analyze(functionNamed(file, "asyncFlow"), rootFor(functionNamed(file, "asyncFlow"), "basic-flow/analyzer.ts"))
         assertEquals(listOf("loadDto()", "new User(loadDto())", "await save(new User(loadDto()))", "await ready"), asyncDocument.nodes.map { it.codeExpression })
         assertEquals(listOf(FlowNodeKind.CALL, FlowNodeKind.CONSTRUCT, FlowNodeKind.CALL, FlowNodeKind.AWAIT), asyncDocument.nodes.map { it.kind })
+        val awaitedCall = asyncDocument.nodes.single { it.codeExpression == "await save(new User(loadDto()))" }
+        assertEquals(file.text.indexOf("await save(new User(loadDto()))"), awaitedCall.sourceLocation.startOffset)
+        assertEquals(awaitedCall.codeExpression, file.text.substring(awaitedCall.sourceLocation.startOffset, awaitedCall.sourceLocation.endOffset))
 
         val nestedFunction = functionNamed(file, "nestedFlow")
         val nestedDocument = analyzer.analyze(nestedFunction, rootFor(nestedFunction, "basic-flow/analyzer.ts"))

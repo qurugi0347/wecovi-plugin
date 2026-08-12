@@ -64,6 +64,15 @@ status: confirmed
 - [x] `./gradlew test --tests '*CallTargetResolverTest'`를 통과한다.
 - [x] 기존 `./gradlew test` 회귀를 통과한다.
 
+### PR #1 리뷰 반영
+
+- [x] `RETURN` node에는 enclosing function return type을 기록한다.
+- [x] resolved internal `CALL`/`CONSTRUCT` node에는 target signature를 기록한다.
+- [x] `await` call/construct node의 source location과 node ID는 prefix expression 전체 범위를 사용한다.
+- [x] resolver는 prefix source range에서도 outer call/construct target을 resolve한다.
+- [x] resolver는 project content와 기본 제외 경로만 internal로 취급한다.
+- [x] signature, await location, construct target, excluded test target의 회귀를 `TypeScriptFlowAnalyzerBasicTest`와 `CallTargetResolverTest`로 검증한다.
+
 ### P2-04. T06 FlowService와 지연 펼치기
 
 - [ ] IntelliJ project content의 `.ts`/`.tsx`만 index 대상으로 찾는다.

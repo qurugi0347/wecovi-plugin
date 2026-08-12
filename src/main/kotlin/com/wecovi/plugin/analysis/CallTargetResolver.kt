@@ -5,6 +5,7 @@ import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.psi.JSNewExpression
 import com.intellij.lang.javascript.psi.JSPsiReferenceElement
 import com.intellij.lang.javascript.psi.JSVariable
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
@@ -18,12 +19,16 @@ class CallTargetResolver {
         if (node.kind !in setOf(FlowNodeKind.CALL, FlowNodeKind.CONSTRUCT)) return node
 
         val call = PsiTreeUtil.findChildrenOfType(file, JSCallExpression::class.java)
-            .firstOrNull { it.textRange.startOffset == node.sourceLocation.startOffset && it.textRange.endOffset == node.sourceLocation.endOffset }
+            .filter { call ->
+                call.textRange.startOffset >= node.sourceLocation.startOffset &&
+                    call.textRange.endOffset <= node.sourceLocation.endOffset
+            }
+            .maxByOrNull { call -> call.textRange.length }
             ?: return unresolved(node)
         val target = (call.methodExpression as? JSPsiReferenceElement)?.resolve() ?: return unresolved(node)
         val targetFile = target.containingFile?.virtualFile ?: return unresolved(node)
 
-        if (!VfsUtilCore.isAncestor(projectRoot, targetFile, false)) {
+        if (!isProjectContent(targetFile, file)) {
             return node.copy(
                 targetSymbolId = null,
                 boundaryKind = BoundaryKind.EXTERNAL,
@@ -43,8 +48,15 @@ class CallTargetResolver {
             boundaryKind = null,
             isDocumented = isDocumented,
             expandable = true,
+            signature = function.signature(),
         )
     }
+
+    private fun isProjectContent(targetFile: VirtualFile, file: PsiFile): Boolean =
+        ProjectFileIndex.getInstance(file.project).isInContent(targetFile) &&
+            !targetFile.name.endsWith(".d.ts") &&
+            !TEST_OR_SPEC_FILE.matches(targetFile.name) &&
+            generateSequence(targetFile.parent) { it.parent }.none { it.name == "__tests__" }
 
     private fun targetFunction(target: com.intellij.psi.PsiElement): JSFunction? = when (target) {
         is JSFunction -> target
@@ -58,4 +70,8 @@ class CallTargetResolver {
         isDocumented = false,
         expandable = false,
     )
+
+    private companion object {
+        val TEST_OR_SPEC_FILE = Regex(".*\\.(test|spec)\\.[^.]+$")
+    }
 }

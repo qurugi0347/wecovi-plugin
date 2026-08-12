@@ -18,17 +18,25 @@ import com.wecovi.plugin.model.FlowNodeKind
 class TypeScriptFlowAnalyzer {
     fun analyze(function: JSFunction, root: FlowIndexEntry): FlowDocument = FlowDocument(
         root = root.copy(signature = root.signature ?: function.signature()),
-        nodes = function.block?.statements.orEmpty().flatMap { statement -> nodesForStatement(statement, root) },
+        nodes = function.block?.statements.orEmpty().flatMap { statement -> nodesForStatement(statement, root, function) },
     )
 
-    private fun nodesForStatement(statement: JSStatement, root: FlowIndexEntry): List<FlowNode> = when (statement) {
+    private fun nodesForStatement(
+        statement: JSStatement,
+        root: FlowIndexEntry,
+        function: JSFunction,
+    ): List<FlowNode> = when (statement) {
         is JSExpressionStatement -> nodesForExpression(statement.expression, root)
-        is JSReturnStatement -> nodesForReturn(statement, root)
+        is JSReturnStatement -> nodesForReturn(statement, root, function)
         is JSVarStatement -> statement.variables.flatMap { variable -> nodesForExpression(variable.initializer, root) }
         else -> emptyList()
     }
 
-    private fun nodesForReturn(statement: JSReturnStatement, root: FlowIndexEntry): List<FlowNode> {
+    private fun nodesForReturn(
+        statement: JSReturnStatement,
+        root: FlowIndexEntry,
+        function: JSFunction,
+    ): List<FlowNode> {
         val returnedNodes = nodesForExpression(statement.expression, root)
 
         return returnedNodes + node(
@@ -36,6 +44,7 @@ class TypeScriptFlowAnalyzer {
             kind = FlowNodeKind.RETURN,
             label = "return",
             codeExpression = statement.text,
+            signature = function.returnTypeElement?.text,
             root = root,
         )
     }
@@ -55,8 +64,8 @@ class TypeScriptFlowAnalyzer {
         val operand = expression.expression
 
         return when (operand) {
-            is JSNewExpression -> nodesForCall(operand, FlowNodeKind.CONSTRUCT, expression.text, root)
-            is JSCallExpression -> nodesForCall(operand, FlowNodeKind.CALL, expression.text, root)
+            is JSNewExpression -> nodesForCall(operand, FlowNodeKind.CONSTRUCT, expression.text, root, expression)
+            is JSCallExpression -> nodesForCall(operand, FlowNodeKind.CALL, expression.text, root, expression)
             else -> listOf(
                 node(
                     element = expression,
@@ -74,6 +83,7 @@ class TypeScriptFlowAnalyzer {
         kind: FlowNodeKind,
         codeExpression: String = expression.text,
         root: FlowIndexEntry,
+        nodeElement: PsiElement = expression,
     ): List<FlowNode> {
         val methodExpression = expression.methodExpression
         val nestedNodes = nodesForExpression(methodExpression, root) +
@@ -85,7 +95,7 @@ class TypeScriptFlowAnalyzer {
         }
 
         return nestedNodes + node(
-            element = expression,
+            element = nodeElement,
             kind = kind,
             label = label,
             codeExpression = codeExpression,
@@ -98,12 +108,14 @@ class TypeScriptFlowAnalyzer {
         kind: FlowNodeKind,
         label: String,
         codeExpression: String,
+        signature: String? = null,
         root: FlowIndexEntry,
     ) = FlowNode(
         id = "${root.symbolId}:$kind:${element.textRange.startOffset}:${element.textRange.endOffset}",
         kind = kind,
         label = label,
         codeExpression = codeExpression,
+        signature = signature,
         sourceLocation = element.sourceLocation(root.sourceLocation.path),
         isDocumented = false,
         expandable = false,
