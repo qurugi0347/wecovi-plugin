@@ -5,3 +5,5 @@ build/
 out/
 .idea/
 *.iml
+ui/dist/
+ui/node_modules/

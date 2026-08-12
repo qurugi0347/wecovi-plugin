@@ -1,297 +1,203 @@
 ---
-name: wecovi-phase2-plan
-description: Wecovi Phase 2 T04~T08 기본 호출 흐름 분석과 WebStorm Canvas 연결 구현 계획
+name: wecovi-phase3-plan
+description: Wecovi Phase 3 T06~T08 FlowService와 WebStorm Flow Canvas 구현 계획
 created: 2026-08-12
-status: confirmed
+status: draft
 ---
 
-# Wecovi Phase 2 Plan
+# Wecovi Phase 3 Plan
 
 ## 목적
 
-T03에서 찾은 Covi 함수들을 파일 이동 없이 실행 순서로 읽을 수 있도록, 기본 TypeScript 호출 흐름을 분석하고 WebStorm 안의 읽기 전용 Canvas까지 연결한다.
-
-## 현재와 목표
+T03~T05가 만든 정확한 기본 호출 흐름을 WebStorm에서 실제로 탐색할 수 있도록, M1의 남은 T06~T08을 구현한다.
 
 ```text
 현재
-TypeScript PSI → CoviMetadataIndexer → FlowIndexEntry 목록
+TypeScript PSI → CoviMetadataIndexer / TypeScriptFlowAnalyzer / CallTargetResolver
 
-Phase 2 완료 후
+Phase 3 완료 후
 TypeScript PSI
-  → CoviMetadataIndexer
-  → TypeScriptFlowAnalyzer + CallTargetResolver
-  → FlowService
-  → Kotlin JBTree / JCEF bridge
-  → React nested Flow Canvas
+  → FlowService (list / analyze / expand)
+  → Kotlin JBTree + Flow Editor session
+  → restricted JCEF bridge
+  → React read-only Flow Canvas
 ```
 
-T03은 이미 완료됐다. 이 계획의 구현 대상은 기존 POC Task T04~T08이며, 기존 contract와 metadata index를 재사용한다.
+## 선행 조건과 완료 조건
 
-## 범위
-
-### 포함
-
-- 기본 함수 body의 `call`, `new`, `await`, `return`
-- root/callee의 인자 expression, signature, return type, project-relative source location
-- internal, external, unresolved 호출 경계
-- root 분석과 internal function 지연 펼치기
-- 저장된 PSI 재요청 반영
-- Kotlin `JBTree` Flows/Functions 목록
-- Editor Tab, JCEF fallback 안내, typed bridge와 source 이동
-- React/Vite/CSS Modules 읽기 전용 세로 Canvas
-- plugin build에 production UI bundle 포함
-- indexing, loading, empty, analysis/expand error와 stale symbol 상태
-
-### 제외
-
-- M2 이후 제어 흐름, 예외, 반복, 병렬, 재귀, interface와 DI
-- Inspector 편집, source 저장과 Undo
-- 설정 화면, 검색·필터·zoom·이력
-- 자유 배치, drag와 graph library
-- unsaved document 실시간 분석과 장기 cache
+- 선행 조건: T01~T05와 현재 `./gradlew test` 회귀가 통과해야 한다. 현재 충족한다.
+- 구현 완료: T06~T08 production code, UI bundle과 `runIde` 기본 사용자 흐름이 동작한다.
+- Phase 완료: 각 Task의 Kotlin/React targeted test와 전체 회귀를 통과하고 POC checklist를 갱신한다.
+- M2 진입 조건: 선택→표시→펼치기→소스 이동이 end-to-end로 확인돼야 한다.
 
 ## 처리 흐름
 
-1. `FlowService`가 smart mode의 cancellable background read action에서 IntelliJ project content의 `.ts`/`.tsx`를 순회해 선언·테스트 파일을 제외하고 Covi index를 합친다.
-2. Kotlin은 indexing/loading 상태를 먼저 표시하고, 완료된 목록만 EDT에서 `JBTree`에 반영한다.
-3. 사용자가 항목을 선택하면 Kotlin이 표준 `LightVirtualFile`을 이용해 Flow Editor Tab을 연다.
-4. `FlowService.analyzeFlow(symbolId)`가 저장된 PSI를 background read action에서 분석해 최상위 `FlowDocument`를 만든다.
-5. JCEF 페이지가 `ready`를 보낸 뒤 Kotlin이 contract JSON을 전달하고 React가 세로 node 목록을 그린다.
-6. internal node 펼치기는 React가 `expandNode(nodeId)`를 요청한다.
-7. Kotlin은 현재 document의 node ID를 검증하고 target symbol의 body만 분석해 반환한다.
-8. `Cmd/Ctrl + 클릭`은 `openSource(nodeId)`를 보내고 Kotlin이 보관한 source location으로 이동한다.
-9. 빈 목록, indexing, stale ID와 분석·펼치기 실패는 typed 상태로 표시하고 사용자가 다시 요청할 수 있게 한다.
-
-## 데이터와 contract
-
-### 기존 contract 최소 보정
-
-- `FlowIndexEntry`: 목록과 root 정보에 optional `signature`를 추가한다. 기존 JSON decode는 default `null`로 호환한다.
-- `FlowDocument`: root와 source order의 최상위 nodes
-- `FlowNode`: kind, label, 원본 expression, signature, source location, target, children, expandable
-- `BoundaryKind`: `EXTERNAL`, `UNRESOLVED`; 이후 milestone 값은 유지하되 Phase 2에서 생성하지 않는다.
-- `isDocumented`: `Undocumented` badge의 유일한 근거
-- contract fixture의 root signature와 format compatibility를 함께 갱신한다.
-
-### Phase 2 node 정규화
-
-| TypeScript | node | 원칙 |
-| --- | --- | --- |
-| `save(user)` | `CALL` | callee와 전체 호출 원문 보존 |
-| `await save(user)` | `CALL` | `await`를 `codeExpression`에 보존하고 중복 await node를 만들지 않음 |
-| `await promise` | `AWAIT` | call/construct가 아닌 독립 await만 별도 node |
-| `new User(dto)` | `CONSTRUCT` | constructor 원문과 signature 보존 |
-| `return user` | `RETURN` | 전체 return 문과 반환 타입 보존 |
-| `return save(user)` | `CALL` 후 `RETURN` | 실제 평가 순서를 유지하되 offset 기반 고유 ID 사용 |
-| `outer(inner())` | inner `CALL` 후 outer `CALL` | statement 내부 expression은 실제 평가 순서의 post-order |
-| `new User(loadDto())` | `loadDto` 후 `CONSTRUCT` | constructor argument를 먼저 평가 |
-| `if (ok) save()` | Phase 2에서 body 미탐색 | M2 전까지 조건부 호출을 선형 호출처럼 표시하지 않음 |
-| `items.map(x => save(x))` | outer `map`만 분석 | nested callback body를 현재 함수의 즉시 실행 흐름으로 오인하지 않음 |
-
-symbol ID는 `<project-relative path>#<functionName>@<function startOffset>`을 사용한다. node ID는 `<owner symbolId>:<kind>:<startOffset>:<endOffset>`을 사용해 root와 펼친 함수 사이의 충돌을 막는다. 같은 저장 snapshot 안에서 고유하면 충분하며 편집 전후 영속 ID는 Phase 2에서 보장하지 않는다.
-
-함수 body의 top-level statement는 소스 순서를 유지하고, statement 안의 receiver와 arguments는 실제 평가 순서로 먼저 방문한 뒤 outer call/construct를 만든다. 아직 지원하지 않는 조건·반복·예외 subtree와 nested function/callback body에는 내려가지 않는다. POC 원칙에 따라 누락은 허용하지만 잘못된 선형화는 허용하지 않는다.
+1. Tool Window controller가 smart mode의 background read action에서 `FlowService.listFlows/listFunctions`를 호출한다.
+2. service는 project content의 지원 TypeScript 파일만 index하고 결과를 group/title/function name 순으로 합친다.
+3. 사용자가 Flows 또는 Functions `JBTree` 항목을 선택하면 Kotlin이 해당 `FlowIndexEntry`를 임시 root로 열거나 재사용한다.
+4. Editor controller가 background read action에서 service를 호출하고, service는 저장된 PSI에서 root를 다시 찾아 analyzer와 resolver로 최상위 `FlowDocument`를 만든다.
+5. Editor session은 root/target의 `SmartPsiElementPointer`와 현재 generation의 node ID→target/source mapping을 보관하고 JCEF `ready` 뒤 JSON을 안전하게 전달한다.
+6. React는 source order의 node를 세로로 렌더링한다.
+7. session이 `(generation, nodeId)`를 검증해 target pointer를 얻고 service가 body를 분석해 해당 node 아래에 중첩한다.
+8. `openSource(nodeId)`는 session lookup과 project content 검증 후 Kotlin이 IDE source 위치를 연다.
+9. 저장 후 재요청은 generation을 올려 늦은 이전 응답을 버리고 session mapping을 교체하며, 삭제·변경된 symbol/node는 typed stale 오류로 끝난다.
 
 ## 책임 분리
 
 | 구성 요소 | 책임 | 하지 않는 일 |
 | --- | --- | --- |
-| `CoviMetadataIndexer` | Covi 함수 목록 | 함수 body 분석 |
-| `TypeScriptFlowAnalyzer` | statement source order와 expression 평가 순서로 지원 node를 정규화 | 미지원 제어 흐름과 nested function body 탐색 |
-| `PsiExpressionReader.kt` | expression text, signature/type, source location의 작은 공용 함수 | 분석 orchestration이나 resolver interface |
-| `CallTargetResolver` | resolved PSI를 internal/external/unresolved로 분류하고 target Covi 여부를 `isDocumented`에 반영 | UI label과 펼침 상태 관리 |
-| `FlowService` | background list/analyze/expand use case와 Editor session의 현재 document mapping | 장기 dependency cache |
-| Kotlin Tool Window | `JBTree` 목록과 Editor 열기 | Canvas rendering |
-| JCEF bridge | message validation과 use case 호출 | 임의 파일 접근 |
-| React Canvas | loading/empty/error와 document rendering, 펼치기와 source 이동 intent | TypeScript 분석과 목록 index |
+| `AnalysisScope` | 지원 확장자와 모든 기본 제외, project content 판정 | PSI 분석 orchestration |
+| `FlowService` | read action 안에서 실행되는 동기 list/analyze/expand | thread 전환, UI 상태, 장기 cache |
+| `FlowEditorSession` | 현재 flow/target PSI pointer, generation과 node lookup | 프로젝트 전체 index 보관 |
+| Tool Window controller | smart-mode read action, EDT tree 반영, 선택과 Editor 열기 | Canvas rendering |
+| Flow Editor controller | 분석 generation, JCEF lifecycle, 초기 document와 session 소유 | project 전체 검색 |
+| bridge handler | message decode/validation, session lookup과 source opener 호출 | raw path 처리 |
+| React Canvas | document/state rendering과 사용자 intent | PSI, 파일 접근, 목록 index |
+
+## 최소 message contract
+
+| 방향 | type | payload | 결과 |
+| --- | --- | --- | --- |
+| React → Kotlin | `ready` | 없음 | 현재 document 1회 전달 |
+| React → Kotlin | `expandNode` | `requestId`, `nodeId` | child document/result 또는 typed error |
+| React → Kotlin | `openSource` | `requestId`, `nodeId` | 이동 성공 또는 typed error |
+| Kotlin → React | `document` | `FlowDocument` | root/갱신 rendering |
+| Kotlin → React | `result` | `requestId`, payload | 요청 성공 |
+| Kotlin → React | `error` | `requestId?`, code/message | invalid/stale/indexing/analysis 오류 |
+
+목록은 Kotlin UI가 service를 직접 호출하므로 React bridge message로 만들지 않는다. React가 raw path, source offset 또는 symbol ID를 임의로 제출하는 API도 만들지 않는다.
+
+## 오류와 상태
+
+| 상태 | 처리 |
+| --- | --- |
+| indexing | Tool Window/Editor에 대기 상태 표시 후 smart mode에서 재실행 |
+| empty | Flows 또는 Functions가 없음을 표시 |
+| stale symbol | Editor 분석을 중단하고 목록에서 다시 열도록 안내 |
+| stale node | expand/source 요청을 거부하고 현재 flow 재분석 제공 |
+| analysis error | 현재 document를 유지하고 재시도 가능한 오류 표시 |
+| JCEF unsupported | 전체 Swing 대체 UI 없이 지원 불가 안내 |
+| invalid message | service/source opener 호출 없이 typed error 반환 |
 
 ## 설계 결정
 
-### 결정 1. await call은 하나의 call node로 표현한다
+### 결정 1. 분석 범위 규칙을 작은 공용 함수로 재사용한다
 
-- 선택: `await save()`를 `CALL` 하나로 만들고 원문에 await를 보존한다.
-- 이유: 한 실행을 두 블록으로 중복 표시하지 않고 기존 `basic-flow.json`과 맞춘다.
-- 차선책: `AWAIT` parent 아래 `CALL` child를 둔다.
-- 차선책 미채택 이유: 기본 흐름이 장황해지고 지연 펼치기 children과 의미가 겹친다.
-- tradeoff: await 여부를 node kind만으로 판단할 수 없어 UI는 `codeExpression` 또는 추후 flag가 필요하다. POC에서는 원문 표시로 충분하다.
+- 선택: resolver의 project content/제외 규칙과 `symbolId(path, function)` 생성을 package-level helper로 옮겨 indexer/service와 함께 사용한다.
+- 이유: 같은 파일이 목록에는 포함되지만 호출 target에서는 external이 되는 불일치를 막는다.
+- 차선책: service와 resolver에 같은 조건을 각각 둔다.
+- 차선책 미채택 이유: 두 번째 실제 사용처가 생겼으므로 중복 유지가 더 비싸다.
+- tradeoff: production helper 파일이 추가되지만 실제 세 호출부의 중복을 없앤다.
 
-### 결정 2. resolver는 analyzer 다음 단계로 둔다
+### 결정 2. controller가 read action과 response generation을 관리한다
 
-- 선택: analyzer가 expression node를 만들고 resolver가 target/boundary/expandable을 채운다.
-- 이유: AST 순서 추출과 project scope 정책을 독립적으로 바꿀 수 있다.
-- 차선책: analyzer가 resolve와 경계 판정을 모두 수행한다.
-- 차선책 미채택 이유: T04와 T05 실패 원인을 분리하기 어렵다.
-- tradeoff: node를 한 번 보강하는 변환 단계가 추가된다.
+- 선택: `FlowService`는 동기 분석만 제공하고 Tool Window/Editor controller가 smart-mode read action, EDT 반영과 generation 비교를 담당한다.
+- 이유: service에 UI thread와 Editor lifecycle을 섞지 않으면서 늦은 분석 결과가 새 선택을 덮는 일을 막는다.
+- 차선책: service가 background scheduling과 UI callback까지 소유한다.
+- 차선책 미채택 이유: application 분석과 IDE lifecycle이 결합되고 테스트 경계가 커진다.
+- tradeoff: 두 controller가 같은 짧은 read-action 실행 패턴을 사용한다. 두 번째 구현 시 작은 helper 추출 여부를 판단한다.
 
-### 결정 3. `PsiExpressionReader`는 top-level 공용 함수만 둔다
+### 결정 3. session에는 현재 flow lookup만 둔다
 
-- 선택: analyzer와 resolver가 같이 쓰는 text/type/location 추출만 top-level internal 함수로 분리한다.
-- 이유: 실제 두 사용처가 있고 특정 객체 상태가 필요 없다.
-- 차선책: interface와 구현 class 또는 범용 PSI facade.
-- 차선책 미채택 이유: 단일 WebStorm PSI 구현에 불필요한 abstraction이다.
-- tradeoff: 다른 language 지원 시 새 reader를 바로 교체할 수 없으며 실제 두 번째 language가 생길 때 재구성한다.
+- 선택: 열린 Editor마다 root/target `SmartPsiElementPointer`와 node ID lookup을 보관하고 재분석 시 generation과 함께 통째로 교체한다.
+- 이유: expand/source 요청을 검증하면서 전역 mutable registry를 피한다.
+- 차선책: application service의 전역 node cache.
+- 차선책 미채택 이유: Editor lifecycle과 stale mapping 경계가 불명확해진다.
+- tradeoff: pointer가 무효가 될 때만 stale로 끝내며, offset 변경 뒤에는 새 node ID를 재등록한다.
 
-### 결정 4. Phase 2에는 장기 cache를 두지 않는다
+### 결정 4. Kotlin 목록과 React Canvas를 분리한다
 
-- 선택: analyze/expand 요청마다 저장된 PSI에서 결과를 만든다.
-- 이유: stale flow보다 반복 계산이 안전하고 POC 정확성 검증에 집중할 수 있다.
-- 차선책: symbol dependency graph와 project-wide cache.
-- 차선책 미채택 이유: invalidation과 lifecycle 비용이 현재 범위를 넘는다.
-- tradeoff: 대형 프로젝트 성능은 POC 이후 측정이 필요하다.
+- 선택: `JBTree`가 Flows/Functions, React가 Canvas만 담당한다.
+- 이유: IDE native 탐색과 복잡한 중첩 rendering을 각각 적합한 UI에서 처리한다.
+- 차선책: 전체 UI를 React 또는 Swing으로 통일한다.
+- 차선책 미채택 이유: 확정된 아키텍처를 바꾸고 중복 구현이 늘어난다.
+- tradeoff: Kotlin selection과 JCEF document 전달 연결이 필요하다.
 
-### 결정 5. Flows/Functions는 Kotlin `JBTree`가 담당한다
+### 결정 5. inline single-entry bundle을 `loadHTML`로 제공한다
 
-- 선택: native Tool Window가 목록을 렌더링하고 React는 Canvas만 담당한다.
-- 이유: 사용자가 확정한 구조이며 IDE theme, keyboard navigation과 accessibility를 재사용한다.
-- 차선책: 목록도 React/JCEF로 구현한다.
-- 차선책 미채택 이유: JCEF instance와 bridge 범위를 늘리고 native 기능을 다시 구현한다.
-- tradeoff: 선택 상태가 Kotlin과 React 두 UI 영역에 걸쳐 흐른다.
+- 선택: Vite production output을 동적 import 없는 고정 이름 JS/CSS entry로 제한하고 Kotlin이 allowlisted resource 내용을 HTML의 `<style>`/`<script>`에 inline해 `JBCefBrowser.loadHTML`에 제공한다.
+- 이유: Canvas 한 화면에는 custom scheme, localhost 서버와 single-file plugin이 필요 없다.
+- 차선책: plugin resource custom scheme 또는 localhost server.
+- 차선책 미채택 이유: handler/lifecycle 또는 실행 환경 의존성이 늘어난다.
+- tradeoff: 향후 code splitting이나 image/font asset이 필요하면 custom scheme으로 전환한다.
 
-### 결정 6. bridge는 node/symbol ID만 신뢰 경계로 받는다
+### 결정 6. bridge는 node ID만 신뢰한다
 
-- 선택: `analyzeFlow`, `expandNode`, `openSource`의 ID를 Kotlin의 현재 index/document에서 다시 검증한다.
-- 이유: React가 임의 path나 Kotlin API를 실행할 수 없게 한다.
-- 차선책: source path와 offset을 payload로 직접 받는다.
-- 차선책 미채택 이유: trust boundary가 넓어지고 project 밖 path 검증이 반복된다.
-- tradeoff: Editor별 현재 document/node lookup 상태가 필요하다.
+- 선택: expand/openSource는 현재 session에 존재하는 node ID만 받는다.
+- 이유: React에서 project path나 임의 offset을 조작할 수 없게 한다.
+- 차선책: `SourceLocation` 또는 symbol ID를 payload로 전달한다.
+- 차선책 미채택 이유: trust boundary가 넓어지고 validation이 중복된다.
+- tradeoff: 재분석 후 이전 node ID 요청은 stale error가 된다.
 
-### 결정 7. UI bundle은 단일 Vite package로 둔다
+### 결정 7. UI abstraction은 실제 두 번째 사용처 전까지 보류한다
 
-- 선택: root `.nvmrc`는 Node 22, `ui/`에 단일 pnpm package와 Vite config를 둔다.
-- 이유: workspace나 monorepo 설정 없이 필요한 build만 제공한다.
-- 차선책: pnpm workspace 또는 Gradle Node plugin.
-- 차선책 미채택 이유: package가 하나뿐이라 관리 계층만 늘어난다.
-- tradeoff: build machine이 nvm/pnpm을 준비해야 하며 end user는 bundled resource만 사용한다.
+- 선택: Flow Editor와 Canvas에 필요한 adapter/component만 만들고 generic editor framework, repository interface, graph abstraction은 만들지 않는다.
+- 이유: 현재는 구현체와 화면이 하나뿐이다.
+- 차선책: transport/service/UI interface를 선제적으로 계층화한다.
+- 차선책 미채택 이유: 전달 객체와 boilerplate만 늘어난다.
+- tradeoff: 두 번째 editor/transport가 생기면 그때 공통 부분을 추출한다.
 
-### 결정 8. source order와 expression 평가 순서를 구분한다
+### 결정 8. 최소 TestCode는 구현 Task에 포함한다
 
-- 선택: top-level statement는 source order로 처리하고 nested expression은 receiver/arguments부터 post-order로 처리한다. 미지원 제어 흐름과 nested function body는 건너뛴다.
-- 이유: `outer(inner())`와 callback/조건부 호출을 잘못된 실행 순서로 표시하지 않는다.
-- 차선책: 모든 지원 PSI descendant를 start offset으로 정렬한다.
-- 차선책 미채택 이유: 코드 위치 순서와 JavaScript 평가 순서가 달라 거짓 flow를 만든다.
-- tradeoff: Phase 2에서는 조건문 안의 호출이 누락되며 M2에서 control-flow node와 함께 추가한다.
-
-### 결정 9. owner 위치 기반 ID를 사용한다
-
-- 선택: function symbol은 path/name/start offset, node는 owner symbol/kind/start/end offset으로 식별한다.
-- 이유: 같은 파일의 동명 함수와 여러 expanded function의 같은 offset 충돌을 막는다.
-- 차선책: 함수명과 node start offset만 사용한다.
-- 차선책 미채택 이유: React key, expand와 source 이동이 다른 대상을 가리킬 수 있다.
-- tradeoff: 소스 편집 후 ID가 바뀌므로 저장 후 re-index에서 기존 Editor session mapping을 교체한다.
-
-### 결정 10. 최소 자동 테스트를 각 Task에 포함한다
-
-- 선택: T04~T08 구현 Task마다 전용 fixture/targeted test와 누적 회귀를 완료 조건으로 둔다.
-- 이유: 다음 Task가 검증되지 않은 분석 결과 위에 쌓이지 않으며 POC의 거짓 edge 0건 규칙을 지킨다.
-- 차선책: 구현 전체 완료 후 별도 TestCode PR에서 한 번에 검증한다.
-- 차선책 미채택 이유: 오류가 여러 layer에 누적돼 실패 원인을 분리하기 어렵다.
-- tradeoff: 구현 Task 크기가 조금 늘어난다. 별도 TestCode PR은 추가 edge case 확장에만 사용한다.
-
-### 결정 11. PSI 분석과 UI 갱신 thread를 분리한다
-
-- 선택: smart mode의 cancellable background read action에서 index/analyze하고 EDT에서는 상태와 `JBTree`만 갱신한다.
-- 이유: project scan과 resolve가 IDE UI를 멈추거나 indexing 중 불완전한 결과를 만들지 않게 한다.
-- 차선책: Tool Window event에서 동기 PSI 분석한다.
-- 차선책 미채택 이유: 큰 project에서 UI freeze와 read access 오류 위험이 있다.
-- tradeoff: loading/indexing/cancelled 상태와 결과 폐기 기준이 필요하다.
-
-### 결정 12. Gradle이 UI bundle 생성을 소유한다
-
-- 선택: `buildUi`가 `ui/dist`를 만들고 `syncUiResources`가 build directory의 generated resources로 복사하며 `processResources`가 이에 의존한다.
-- 이유: `buildPlugin` 한 명령으로 최신 Canvas가 항상 ZIP에 포함된다.
-- 차선책: 개발자가 `pnpm build`를 수동 실행하고 `src/main/resources`에 결과를 둔다.
-- 차선책 미채택 이유: stale bundle과 생성물 commit 위험이 있다.
-- tradeoff: plugin build machine에 Node 22와 pnpm이 필요하다.
-
-## 재사용 및 함수화 판단
-
-| 대상 | 선택 | 예상 사용처 | 필요한 입력 | 결합도와 이유 |
-| --- | --- | --- | --- | --- |
-| PSI expression text/type/location | 지금 top-level 함수화 | analyzer, resolver, source opener | `PsiElement`, project root | 객체 상태가 없고 두 사용처가 확정됨 |
-| Flow node factory | 보류 | 현재 analyzer 한 곳 | 여러 PSI·metadata 값 | 두 번째 생성 지점이 생기기 전에는 parameter 전달만 늘어남 |
-| language-neutral analyzer interface | 보류 | TypeScript만 지원 | language별 PSI adapter | 두 번째 language 요구가 생길 때 도입 |
-| project analysis cache | 보류 | 성능 측정 후 | dependency graph와 invalidation | 정확성 POC에 불필요하고 stale 위험이 큼 |
-| bridge transport interface | 최소 함수 경계만 유지 | JCEF query, unit fake | typed request/response | 테스트 대체 지점은 필요하지만 factory 계층은 불필요 |
+- 선택: `FlowServiceTest`, `FlowBridgeTest`, Canvas component test를 각 구현 Task의 완료 조건에 포함한다.
+- 이유: POC의 fixture·targeted test 완료 원칙과 사용자의 승인 결정을 따른다.
+- 차선책: 구현 완료 후 별도 테스트 PR.
+- 차선책 미채택 이유: 신규 service/bridge/UI 오류를 Task 단위로 판정할 수 없다.
+- tradeoff: 구현 Task가 커진다. 추가 edge case만 후속 TestCode PR로 분리한다.
 
 ## TaskList
 
-### Phase A. 기준 정합화
+### P3-01. T06 `AnalysisScope`와 `FlowService`
 
-#### P2-01. 기존 POC 계획과 contract 의미 정리
+- 변경 대상: `src/main/kotlin/com/wecovi/plugin/analysis/AnalysisScope.kt`, `FlowSymbolId.kt`, `CoviMetadataIndexer.kt`, `CallTargetResolver.kt`, `src/main/kotlin/com/wecovi/plugin/service/FlowService.kt`, 필요한 service result/error model, `FlowServiceTest.kt`, `lazy-expansion/*.ts`
+- 구현: `.ts`/`.tsx` project content를 찾아 `node_modules`, `dist`, `build`, `generated`, 선언·테스트 파일을 제외하고 여러 파일 index를 전역 정렬한다. 공용 symbol ID로 root를 찾고 analyzer/resolver를 적용하며 internal target pointer만 expand한다. service API는 호출자가 read action 안에서 실행하는 동기 API로 둔다.
+- 의존성: T03~T05
+- 구현 검증: `./gradlew test --tests '*FlowServiceTest'`, `./gradlew test`
+- 완료 기준: list/analyze/expand API와 typed stale/analysis 결과가 존재하고 장기 cache 없이 호출 시점 PSI를 읽는다.
 
-- 변경 대상: `.codex/poc/architecture.md`, `.codex/poc/plan.md`, `.codex/poc/checklist.md`, `.codex/poc/test-code-plan.md`
-- 구현: `Ungrouped=empty groupPath`, `Undocumented=isDocumented=false`, Kotlin `JBTree` 목록, Task별 최소 테스트와 추가 TestCode 분리 기준을 기존 POC 문서에 맞춘다.
-- 의존성: 계획 승인
-- 자동 검증: T03 fixture에 빈 group, 동명 함수/정렬 회귀를 추가하고 `CoviMetadataIndexerTest`와 전체 테스트를 실행한다.
-- 완료 기준: 기존 POC 문서, 실제 contract와 Phase 2 계획에 같은 용어와 검증 흐름이 사용된다.
+### P3-02. T07 Tool Window와 Flow Editor shell
 
-### Phase B. Kotlin 분석과 application flow
+- 변경 대상: `plugin.xml`, `src/main/kotlin/com/wecovi/plugin/ui/CoviToolWindowFactory.kt`, `FlowEditorProvider.kt`, `FlowEditor.kt`, `FlowEditorSession.kt`, Kotlin integration test
+- 구현: Flows/Functions `JBTree`의 group 계층과 `Ungrouped`, non-root 임시 flow, loading/indexing/empty/error 상태, 동일 symbol의 Editor 재사용, smart-mode read action과 EDT 반영, generation 기반 오래된 응답 폐기, JCEF 지원 여부에 따른 browser/안내 화면과 lifecycle dispose를 구성한다.
+- 의존성: P3-01의 service API; JCEF shell 자체는 병렬 작성 가능
+- 구현 검증: `./gradlew compileKotlin`, `./gradlew runIde`에서 Tool Window와 빈/선택 Editor smoke
+- 완료 기준: 목록 선택으로 동일 flow Editor가 열리고 JCEF 미지원 환경에서도 오류 없이 안내한다.
 
-#### P2-02. T04 기본 함수 본문 analyzer
+### P3-03. T07 bridge와 UI build pipeline
 
-- 변경 대상: `model/FlowContracts.kt`, `fixtures/contracts/basic-flow.json`, `analysis/TypeScriptFlowAnalyzer.kt`, `analysis/PsiExpressionReader.kt`, `TypeScriptFlowAnalyzerBasicTest.kt`, `basic-flow/*.ts`
-- 구현: `FlowIndexEntry.signature`와 owner 위치 기반 node ID를 추가하고 statement source order와 nested expression 평가 순서로 지원 node를 만든다. function symbol ID는 P2-01에서 보정한 규칙을 사용한다. 미지원 제어 흐름과 nested function/callback body는 탐색하지 않는다.
-- 의존성: P2-01, 기존 T03
-- 자동 검증: `FlowContractTest`, `TypeScriptFlowAnalyzerBasicTest` targeted test 후 전체 `./gradlew test`를 실행한다.
-- 완료 기준: root signature, call/construct/await/return의 평가 순서와 원문·signature·location이 일치하며 nested call, 조건문과 callback에서 거짓 순서가 생기지 않는다.
+- 변경 대상: `src/main/kotlin/com/wecovi/plugin/bridge/`, bundled HTML loader, `build.gradle.kts`, `.nvmrc`, `ui/package.json`, `ui/pnpm-lock.yaml`, `ui/vite.config.ts`, UI entry, `FlowBridgeTest.kt`
+- 구현: `ready/expandNode/openSource` whitelist와 typed response를 만들고, 고정 이름 JS/CSS bundled resource를 HTML에 inline해 `loadHTML`로 UI를 제공한다. `pnpm install --frozen-lockfile → build` output을 generated resources로 복사하고 `processResources/buildPlugin`에 연결한다.
+- 의존성: P3-01, P3-02
+- 구현 검증: `./gradlew test --tests '*FlowBridgeTest'`, `pnpm --dir ui build`, `./gradlew buildPlugin`, ZIP/JAR과 installed plugin에서 `ready` 수신 확인
+- 완료 기준: `buildPlugin` 한 번으로 UI bundle이 포함되며 실행 사용자는 Node.js가 필요 없다.
 
-#### P2-03. T05 호출 대상 resolver
+### P3-04. T08 읽기 전용 Flow Canvas 연결
 
-- 변경 대상: `analysis/CallTargetResolver.kt`, analyzer 연결부, `CallTargetResolverTest.kt`, `call-boundary/*.ts`
-- 구현: resolve 결과와 project content scope로 internal/external/unresolved를 판정하고 target의 Covi metadata로 `isDocumented`를 채운다.
-- 의존성: P2-02
-- 자동 검증: `CallTargetResolverTest` targeted test 후 전체 `./gradlew test`를 실행한다.
-- 완료 기준: 단일 internal만 target과 expandable을 가지며 외부/미해결은 terminal boundary다. 이름만 같은 대상에 edge를 만들지 않고 `isDocumented`가 target metadata와 일치한다.
+- 변경 대상: `ui/src/bridge/`, `ui/src/features/flow/`, CSS Modules, Kotlin Editor/bridge 연결부, React component tests
+- 구현: root와 source order node, internal/external/unresolved/undocumented 상태를 세로로 표시한다. internal expand는 중복 요청을 막고 현재 node 아래에 응답을 넣는다. `Cmd/Ctrl + 클릭`은 node ID 기반 source intent를 보낸다. TypeScript 저장 시 dependency graph 없이 열린 flow만 다시 분석하며 loading/empty/error/stale 재시도를 제공한다.
+- 의존성: P3-01~P3-03
+- 구현 검증: `pnpm --dir ui exec vitest run`, `pnpm --dir ui build`, `./gradlew buildPlugin`, `runIde` 선택→표시→펼치기→소스 이동 smoke
+- 완료 기준: M1 핵심 사용자 흐름이 동작하고 drag/자유 배치/React Flow가 없다.
 
-#### P2-04. T06 `FlowService`와 지연 펼치기
+### P3-05. 구현 acceptance와 문서 동기화
 
-- 변경 대상: `service/FlowService.kt`, 필요한 request/result data class, `FlowServiceTest.kt`, `lazy-expansion/*.ts`
-- 구현: smart mode의 cancellable background read action에서 기본 분석 대상 TypeScript 파일을 찾아 index를 전역 정렬하고 listFlows, listFunctions, analyzeFlow, expandNode를 제공한다. Editor session에는 검증된 current document/node mapping만 유지한다.
-- 의존성: P2-03
-- 자동 검증: `FlowServiceTest` targeted test 후 전체 `./gradlew test`를 실행한다.
-- 완료 기준: `.ts`/`.tsx`만 포함하고 `.d.ts`, `.test.*`, `.spec.*`, `__tests__`를 제외한다. root와 expand 깊이가 다르고 저장 후 재요청은 새 PSI/ID mapping을 사용하며 삭제·변경된 symbol은 typed stale error로 끝난다.
+- 변경 대상: 실제 구현 결과에 영향받은 `.codex/poc/checklist.md`, architecture/UX 문서(결정 변경이 있을 때만)
+- 구현: production build와 수동 flow를 확인하고 실제 경로·message가 계획과 다르면 기준 문서 한 곳에 반영한다.
+- 의존성: P3-04
+- 검증: `./gradlew test`, `pnpm --dir ui build`, `./gradlew buildPlugin`, `./gradlew runIde`
+- 완료 기준: 구현 PR 준비 상태를 확인하고 후속 TestCode PR의 base로 사용할 수 있다.
 
-### Phase C. IDE와 JCEF/React
+## 선택적 후속 TestCode PR
 
-#### P2-05. T07 Tool Window·Editor·bridge shell
+- 진행 조건: P3-01~P3-05 구현과 commit/PR 준비 완료 후 사용자 요청
+- PR 기준: `codex/poc-phase3` 구현 branch를 base로 별도 TestCode branch/PR 생성
+- 대상: 구현 Task의 최소 검증을 넘는 추가 edge case
+- 상세 계획: `.codex/plan/test-code-plan.md`
+- 완료 판정: 별도 PR은 선택 사항이며 T06~T08 완료 판정을 막지 않는다.
 
-- 변경 대상: `plugin.xml`, Kotlin `ui/`, Kotlin `bridge/`, `build.gradle.kts`, `.nvmrc`, `ui/package.json`, `ui/pnpm-lock.yaml`, `ui/vite.config.ts`, CSS/React entry, `FlowBridgeTest.kt`
-- 구현: `JBTree` Tool Window, 표준 `LightVirtualFile` 기반 Editor, JCEF 지원 여부 안내, ready handshake, typed whitelist와 source opener를 구성한다. `buildUi → syncUiResources → processResources → buildPlugin` task dependency로 Vite output을 generated resources에 포함한다.
-- 의존성: P2-01; P2-04와 병렬 구현 가능하나 연결은 이후 진행
-- 자동 검증: `FlowBridgeTest`, 전체 `./gradlew test`, `pnpm --dir ui build`, `./gradlew buildPlugin`을 실행한다.
-- 완료 기준: `buildPlugin` 단일 명령의 ZIP에 최신 정적 bundle이 포함되고 clean build도 동일하다. JCEF 불가 시 안내 화면, indexing/empty/error 상태가 보이며 raw path 요청은 거부된다.
+## 승인 요청 사항
 
-#### P2-06. T08 목록·Canvas·펼치기·소스 이동 연결
-
-- 변경 대상: Kotlin Tool Window/Editor/bridge, `ui/src/features/flow/`, CSS Modules, Kotlin Tool Window integration test와 React component tests
-- 구현: JBTree 선택 → loading/root document → nested Canvas → expand → source 이동을 연결하고 empty, analysis/expand error와 stale state에서 재시도를 제공한다.
-- 의존성: P2-04, P2-05
-- 자동 검증: Kotlin Tool Window/Editor integration test, `pnpm --dir ui exec vitest run`, 전체 Kotlin 테스트와 UI build를 실행한다.
-- 완료 기준: internal, external, unresolved와 undocumented 표시가 구분되고 expand는 한 번만 요청되며 source 이동이 project 내부 위치로만 동작한다.
-
-### Phase D. 사용자 확인과 원본 작업 완료
-
-#### P2-07. Phase 2 수동 acceptance와 문서 동기화
-
-- 변경 대상: 구현 결과에 영향받은 POC checklist와 상세 문서
-- 구현: 실제 동작과 계획의 차이를 반영하고 P2-01~P2-06 targeted test와 acceptance를 기록한다.
-- 의존성: P2-06
-- 검증: `./gradlew test`, `pnpm --dir ui build`, `./gradlew buildPlugin`, `runIde` smoke
-- 완료 기준: 사용자에게 구현 결과와 추가 edge case 후보를 보고하고 commit/PR 준비가 가능하다.
-
-## TestCode 실행 원칙
-
-- 상세 시나리오: `.codex/plan/test-code-plan.md`
-- 최소 fixture와 targeted test는 P2-01~P2-06 구현과 같은 Task/branch에 포함한다.
-- 각 Task는 targeted test와 누적 회귀가 통과하기 전 다음 의존 Task로 넘어가지 않는다.
-- 별도 TestCode PR은 Phase 2 완료 후 추가 edge case나 장기 회귀 확장이 필요할 때만 사용자 요청으로 진행한다.
-
-## 승인 결과
-
-1. `Ungrouped`와 `Undocumented` 표현은 기존 contract 해석을 유지한다.
-2. `await call()`은 하나의 call/construct node로 표시한다.
-3. Flows/Functions는 Kotlin `JBTree`, React는 Canvas만 담당한다.
-4. 최소 TestCode는 각 구현 Task에 포함한다.
-5. owner 위치 기반 ID와 root signature contract를 Phase 2에서 보정한다.
-6. `.codex/plan/`은 Git tracking 대상으로 둔다.
+1. Phase 3 범위를 T06~T08(M1 완성)으로 진행한다.
+2. JCEF asset은 localhost/custom scheme 없이 단일-entry bundled resource를 `loadHTML`로 제공한다.
+3. bridge에는 목록 API/raw path를 노출하지 않고 node ID 기반 expand/source 요청만 둔다.
+4. 최소 TestCode는 각 구현 Task에 포함하고, 추가 edge case만 별도 PR로 진행한다.

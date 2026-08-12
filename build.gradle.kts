@@ -49,6 +49,29 @@ kotlin {
     }
 }
 
+val installUi by tasks.registering(Exec::class) {
+    workingDir("ui")
+    commandLine("pnpm", "install", "--frozen-lockfile")
+    inputs.file("ui/package.json")
+    inputs.file("ui/pnpm-lock.yaml")
+    outputs.dir("ui/node_modules")
+}
+
+val buildUi by tasks.registering(Exec::class) {
+    dependsOn(installUi)
+    workingDir("ui")
+    commandLine("pnpm", "build")
+    inputs.dir("ui/src")
+    inputs.file("ui/index.html")
+    inputs.file("ui/vite.config.ts")
+    outputs.dir("ui/dist")
+}
+
+tasks.processResources {
+    dependsOn(buildUi)
+    from("ui/dist") { into("wecovi/ui") }
+}
+
 tasks.test {
     systemProperty("idea.load.plugins.id", "JavaScript")
     systemProperty("wecovi.projectDir", projectDir.absolutePath)
