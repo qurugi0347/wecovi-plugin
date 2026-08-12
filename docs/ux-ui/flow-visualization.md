@@ -64,9 +64,11 @@ Functions
 
 - 왼쪽 Tool Window: flow와 함수 선택, 검색, 필터, 정렬
 - 중앙 Flow Canvas: 실행 순서와 중첩 흐름
-- 오른쪽 Inspector: Covi 편집, 읽기 전용 코드 정보, 호출 위치와 원문
+- Editor Tab 안의 오른쪽 Inspector: Covi 편집, 읽기 전용 코드 정보, 호출 위치와 원문
 
 중앙 Flow Canvas는 WebStorm Editor Tab으로 제공한다. 같은 flow를 다시 선택하면 기존 탭을 재사용하며, flow를 이동한 이력은 뒤로 가기와 앞으로 가기를 지원한다.
+
+Tool Window와 Editor Tab의 Kotlin/JCEF/React 구현 책임은 [기술 구성과 분석 정책](../architecture/plugin-architecture.md)을 기준으로 한다.
 
 ## Flow Canvas
 
@@ -199,7 +201,7 @@ Group        [사용자 API/User]
 - `@covi-group`
 - 조건·대입·return 등 지원 문장의 Covi 설명
 
-필드를 수정하면 별도의 임시 데이터에 머물지 않고 실제 TypeScript 소스의 주석에 바로 저장한다. 변경은 WebStorm의 write action과 undo 이력에 포함해 사용자가 되돌릴 수 있어야 한다.
+필드에서 `Enter`를 누르거나 다른 곳으로 포커스를 옮기면 실제 TypeScript 소스의 주석에 저장한다. 입력 중인 글자마다 소스를 변경하지 않고, 한 번의 확정 동작을 하나의 WebStorm write action과 undo 이력으로 기록한다.
 
 ### 읽기 전용 정보
 
@@ -244,7 +246,7 @@ Inspector 최하단에는 함수 전체 원문을 읽기 전용으로 보여준�
 - 일반 코드 저장 시 현재 열려 있거나 영향을 받는 flow만 다시 분석한다.
 - `@covi-root` 또는 `@covi-group` 변경 시 flow와 메뉴 구조를 다시 탐색한다.
 - 저장 후에도 펼쳐 둔 노드는 유지한다. 함수가 삭제되거나 이름이 바뀌어 더는 찾을 수 없을 때만 해당 상태를 버린다.
-- Inspector에서 Covi를 수정하면 소스 저장 결과가 즉시 Canvas에 반영된다.
+- Inspector에서 Covi 입력을 `Enter` 또는 포커스 이탈로 확정하면 소스 저장 결과가 즉시 Canvas에 반영된다.
 
 ## 첫 검증 예제
 

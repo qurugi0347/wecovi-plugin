@@ -80,16 +80,16 @@ flowchart LR
 | Application service | `src/main/kotlin/com/wecovi/plugin/service/FlowService.kt` | 목록·root 분석·지연 펼치기 요청 조정 |
 | IDE integration | `src/main/kotlin/com/wecovi/plugin/ui/` | Tool Window, Flow Editor, JCEF 생명주기, 소스 이동 |
 | Bridge | `src/main/kotlin/com/wecovi/plugin/bridge/` | 허용한 typed message와 JSON 변환 |
-| React UI | `ui/src/` | Flows/Functions 목록, 중첩 Canvas, 펼치기 요청 |
+| React UI | `ui/src/` | 중첩 Canvas, 펼치기와 source 이동 intent |
 | Test fixtures | `src/test/testData/typescript/`, `fixtures/contracts/` | TypeScript 입력과 Kotlin/React 공용 기대 contract |
 
 ### 최소 Flow contract
 
-- `FlowIndexEntry`: symbol ID, 제목, 함수명, group path, source location, root 여부
+- `FlowIndexEntry`: symbol ID, 제목, 함수명, group path(빈 값은 Kotlin 목록 UI에서 `Ungrouped`로 표시), source location, root 여부
 - `FlowDocument`: root 정보와 소스 순서를 유지하는 최상위 node 목록
-- `FlowNode`: 안정적인 node ID, kind, label, code expression, signature, source location, children, expandability
+- `FlowNode`: 안정적인 node ID, kind, label, code expression, signature, source location, `isDocumented`, children, expandability
 - `FlowNodeKind`: call, construct, await, return, condition, switch, throw, try, catch, loop, parallel, reference
-- `BoundaryKind`: external, unresolved, multiple, recursive, runtime binding, undocumented
+- `BoundaryKind`: external, unresolved, multiple, recursive, runtime binding
 - `SourceLocation`: project-relative path, start offset 또는 line/column
 
 PSI 객체와 absolute path는 bridge contract에 직접 노출하지 않는다. Kotlin 내부에서 symbol pointer 또는 source location을 이용해 다시 찾는다.
@@ -173,7 +173,7 @@ PSI 객체와 absolute path는 bridge contract에 직접 노출하지 않는다.
 
 #### T03. Covi metadata와 Flows/Functions 목록 탐색
 
-- 구현: 저장된 TypeScript PSI의 JSDoc에서 `@covi-root`, `@covi`, `@covi-group`과 description을 읽는다. `@covi-root`는 `@covi`를 포함한 것으로 처리하고 group이 없으면 `Ungrouped`로 둔다.
+- 구현: 저장된 TypeScript PSI의 JSDoc에서 `@covi-root`, `@covi`, `@covi-group`과 description을 읽는다. `@covi-root`는 `@covi`를 포함한 것으로 처리하고 group이 없으면 빈 `groupPath`로 둔다. Kotlin 목록 UI가 빈 group을 `Ungrouped`로 표시한다.
 - 변경 대상: `analysis/CoviMetadataIndexer.kt`, `analysis/CoviMetadata.kt`, `CoviMetadataIndexerTest.kt`, `metadata/*.ts`
 - 의존성: T02
 - 빠른 검증: root, 일반 covi, group, undocumented, 이름 있는 arrow fixture에서 기대 Flows/Functions 항목과 정렬 key가 일치한다.
@@ -213,10 +213,10 @@ PSI 객체와 absolute path는 bridge contract에 직접 노출하지 않는다.
 
 #### T08. Flows/Functions·중첩 Canvas·소스 이동 UI 연결
 
-- 구현: React 목록, 읽기 전용 세로 Canvas, node 상태 badge, expand action과 `Cmd/Ctrl + 클릭` source 이동을 구현하고 T06/T07 bridge에 연결한다.
-- 변경 대상: `ui/src/bridge/`, `ui/src/features/explorer/`, `ui/src/features/flow/`, React component tests
+- 구현: Kotlin `JBTree` 목록 선택과 읽기 전용 세로 Canvas, node 상태 badge, expand action과 `Cmd/Ctrl + 클릭` source 이동을 구현하고 T06/T07 bridge에 연결한다.
+- 변경 대상: Kotlin Tool Window/Editor integration, `ui/src/bridge/`, `ui/src/features/flow/`, React component tests
 - 의존성: T06, T07
-- 빠른 검증: `basic-flow.json` component test에서 목록 선택 → root 표시 → 내부 node 펼치기 → source 이동 message가 순서대로 확인된다. `runIde`에서 같은 flow를 1회 end-to-end 확인한다.
+- 빠른 검증: Kotlin 목록 선택 integration과 `basic-flow.json` Canvas component test에서 root 표시 → 내부 node 펼치기 → source 이동 message가 확인된다. `runIde`에서 같은 flow를 1회 end-to-end 확인한다.
 - 명령: `pnpm --dir ui exec vitest run`, 이후 `./gradlew runIde` smoke
 
 ### Phase 2. M2 제어 흐름과 예외

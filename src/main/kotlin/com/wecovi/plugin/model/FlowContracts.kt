@@ -33,6 +33,7 @@ data class FlowIndexEntry(
     val title: String,
     val functionName: String,
     val groupPath: List<String>,
+    val signature: String? = null,
     val sourceLocation: SourceLocation,
     val isRoot: Boolean,
 )

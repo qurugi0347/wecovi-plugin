@@ -85,7 +85,7 @@ review_required: true
 ##### WHEN: Functions 목록을 요청한다
 
 - THEN: `@covi`와 `@covi-root` 함수가 모두 포함된다.
-- THEN: group이 없으면 `Ungrouped`로 분류한다.
+- THEN: group이 없으면 빈 `groupPath`로 반환하고 Kotlin 목록 UI가 `Ungrouped`로 표시한다.
 - THEN: 이름 있는 arrow function은 변수 또는 property 이름을 사용한다.
 
 ### 범위 4. 기본 body 분석과 호출 경계
@@ -149,19 +149,19 @@ review_required: true
 - THEN: Kotlin API나 파일을 실행하지 않는다.
 - THEN: 검증된 `error` 응답을 반환한다.
 
-### 범위 6. React explorer와 Flow Canvas
+### 범위 6. Kotlin 목록과 React Flow Canvas
 
 | 항목 | 내용 |
 | --- | --- |
-| 대상 파일 | `ui/src/features/explorer/*`, `ui/src/features/flow/*`, `ui/src/bridge/*` |
-| 테스트 파일 | 각 feature의 `*.test.tsx` |
+| 대상 파일 | Kotlin Tool Window/Editor, `ui/src/features/flow/*`, `ui/src/bridge/*` |
+| 테스트 파일 | Kotlin integration test와 Flow Canvas `*.test.tsx` |
 | Fixture | `fixtures/contracts/basic-flow.json` |
 | 테스트 레벨 | component |
 | Mock/Stubbing | Kotlin bridge adapter를 mock |
 
-#### GIVEN: Flows/Functions와 접힌 internal node가 있는 contract fixture
+#### GIVEN: Kotlin 목록에서 선택한 flow와 접힌 internal node가 있는 contract fixture
 
-##### WHEN: 사용자가 flow를 선택한다
+##### WHEN: 사용자가 Kotlin `JBTree`에서 flow를 선택한다
 
 - THEN: root node와 상위 실행 순서가 렌더링된다.
 - THEN: External, Unresolved와 Undocumented badge가 구분된다.

@@ -36,10 +36,20 @@ class FlowContractTest : TestCase() {
 
         // Then: root metadata, node order, nested children, and offsets remain unchanged.
         assertEquals(goldenFixture, reencoded)
-        assertEquals("src/user/signup.ts#signup", document.root.symbolId)
+        assertEquals("src/user/signup.ts#signup@0", document.root.symbolId)
+        assertEquals("signup(dto: SignupDto): Promise<UserId>", document.root.signature)
         assertEquals(3, document.nodes.size)
         assertEquals(1, document.nodes.first().children.size)
         assertEquals(82, document.nodes.first().sourceLocation.startOffset)
+    }
+
+    fun testGIVENSignedAndLegacyRootsWHENDecodedTHENKeepsSignatureOptional() {
+        val goldenFixture = readGoldenFixture()
+        val legacyRoot = JsonObject(goldenFixture.jsonObject.getValue("root").jsonObject - "signature")
+        val legacyFixture = JsonObject(goldenFixture.jsonObject + ("root" to legacyRoot))
+
+        assertEquals("signup(dto: SignupDto): Promise<UserId>", FlowJson.codec.decodeFromJsonElement<FlowDocument>(goldenFixture).root.signature)
+        assertNull(FlowJson.codec.decodeFromJsonElement<FlowDocument>(legacyFixture).root.signature)
     }
 
     fun testGIVENContractEnumsWHENSerializedTHENUsesStableWireNames() {
@@ -107,16 +117,17 @@ class FlowContractTest : TestCase() {
 
     private fun basicFlowDocument() = FlowDocument(
         root = FlowIndexEntry(
-            symbolId = "src/user/signup.ts#signup",
+            symbolId = "src/user/signup.ts#signup@0",
             title = "회원가입",
             functionName = "signup",
             groupPath = listOf("User API", "User"),
+            signature = "signup(dto: SignupDto): Promise<UserId>",
             sourceLocation = SourceLocation("src/user/signup.ts", 0, 440),
             isRoot = true,
         ),
         nodes = listOf(
             basicNode(
-                id = "src/user/signup.ts#signup:call:createUser",
+                id = "src/user/signup.ts#signup@0:call:82:107",
                 label = "사용자 생성",
                 codeExpression = "await createUser(dto)",
                 signature = "createUser(dto: SignupDto): Promise<User>",
@@ -125,7 +136,7 @@ class FlowContractTest : TestCase() {
                 isDocumented = false,
                 children = listOf(
                     basicNode(
-                        id = "src/user/signup.ts#signup:call:createUser:return",
+                        id = "src/user/signup.ts#signup@0:return:150:161",
                         kind = FlowNodeKind.RETURN,
                         label = "생성한 사용자 반환",
                         codeExpression = "return user",
@@ -136,7 +147,7 @@ class FlowContractTest : TestCase() {
                 expandable = true,
             ),
             basicNode(
-                id = "src/user/signup.ts#signup:call:bcryptHash",
+                id = "src/user/signup.ts#signup@0:call:132:167",
                 label = "bcrypt.hash",
                 codeExpression = "await bcrypt.hash(dto.password, 10)",
                 signature = "hash(data: string, saltOrRounds: number): Promise<string>",
@@ -145,7 +156,7 @@ class FlowContractTest : TestCase() {
                 isDocumented = true,
             ),
             basicNode(
-                id = "src/user/signup.ts#signup:call:notification",
+                id = "src/user/signup.ts#signup@0:call:198:228",
                 label = "알림 전송",
                 codeExpression = "await notifier[channel](user)",
                 sourceLocation = SourceLocation("src/user/signup.ts", 198, 228),
