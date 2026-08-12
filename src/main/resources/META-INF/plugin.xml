@@ -9,4 +9,9 @@
   <description><![CDATA[
     Wecovi tools for WebStorm.
   ]]></description>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="Covi" factoryClass="com.wecovi.plugin.ui.CoviToolWindowFactory" anchor="left" />
+    <fileEditorProvider implementation="com.wecovi.plugin.ui.FlowEditorProvider" />
+  </extensions>
 </idea-plugin>

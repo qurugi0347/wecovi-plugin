@@ -5,6 +5,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.SmartPointerManager
+import com.intellij.psi.SmartPsiElementPointer
 import com.intellij.psi.util.PsiTreeUtil
 import com.wecovi.plugin.analysis.CallTargetResolver
 import com.wecovi.plugin.analysis.CoviMetadataIndexer
@@ -26,7 +28,13 @@ class FlowService(
 
     fun analyze(symbolId: String): FlowDocument = analyze(findFunction(symbolId) ?: error("Unknown flow: $symbolId"))
 
+    fun analyze(pointer: SmartPsiElementPointer<JSFunction>): FlowDocument =
+        analyze(pointer.element ?: error("Stale flow"))
+
     fun expand(symbolId: String): FlowDocument = analyze(findFunction(symbolId) ?: error("Unknown flow: $symbolId"))
+
+    fun pointer(symbolId: String): SmartPsiElementPointer<JSFunction>? =
+        findFunction(symbolId)?.let { function -> SmartPointerManager.getInstance(project).createSmartPsiElementPointer(function) }
 
     private fun listEntries(): List<FlowIndexEntry> = sourceFiles()
         .flatMap { file -> CoviMetadataIndexer().index(file, projectRoot).functions }
@@ -37,7 +45,7 @@ class FlowService(
         .flatMap { file -> PsiTreeUtil.findChildrenOfType(file, JSFunction::class.java).asSequence() }
         .firstOrNull { function -> flowSymbolId(pathOf(function), function) == symbolId }
 
-    private fun analyze(function: JSFunction): FlowDocument {
+    fun analyze(function: JSFunction): FlowDocument {
         val path = pathOf(function)
         val root = listEntries().firstOrNull { it.symbolId == flowSymbolId(path, function) }
             ?: FlowIndexEntry(

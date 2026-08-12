@@ -38,33 +38,33 @@ status: draft
 
 ### P3-02. Tool Window와 Flow Editor
 
-- [ ] `plugin.xml`에 Tool Window와 Flow Editor extension을 등록한다.
-- [ ] Kotlin `JBTree`로 Flows/Functions와 상태를 표시한다.
-- [ ] group 계층과 빈 group의 `Ungrouped`를 표시한다.
-- [ ] non-root Function 선택을 임시 root로 연다.
+- [x] `plugin.xml`에 Tool Window와 Flow Editor extension을 등록한다.
+- [x] Kotlin `JBTree`로 Flows/Functions를 표시한다.
+- [x] group 계층과 빈 group의 `Ungrouped`를 표시한다.
+- [x] non-root Function 선택을 임시 root로 연다.
 - [ ] controller가 smart-mode read action과 EDT tree 반영을 관리한다.
 - [ ] generation이 지난 분석 응답은 현재 선택/document에 반영하지 않는다.
 - [ ] 선택한 symbol ID로 같은 flow Editor Tab을 열거나 재사용한다.
-- [ ] Editor가 현재 flow의 node/source/target lookup을 소유한다.
-- [ ] Editor가 root/target `SmartPsiElementPointer`를 보관해 offset 변경 뒤에도 열린 flow를 재분석한다.
-- [ ] JCEF 지원 환경은 bundled UI를 열고 미지원 환경은 안내한다.
-- [ ] Editor/JCEF disposable lifecycle을 IDE parent에 연결한다.
+- [x] Editor가 현재 flow의 node/source/target lookup을 소유한다.
+- [x] Editor가 root/target `SmartPsiElementPointer`를 보관해 offset 변경 뒤에도 열린 flow를 재분석한다.
+- [x] JCEF 지원 환경은 bundled UI를 열고 미지원 환경은 안내한다.
+- [x] Editor/JCEF disposable lifecycle을 IDE parent에 연결한다.
 - [ ] `runIde`에서 Tool Window와 선택 Editor smoke를 확인한다.
 
 ### P3-03. bridge와 bundle
 
-- [ ] `ready`, `expandNode`, `openSource`만 whitelist한다.
-- [ ] payload size/type와 현재 session node ID를 검증한다.
-- [ ] raw path/source offset/symbol ID 요청을 허용하지 않는다.
-- [ ] ready 전 document 전송을 보류하고 이후 한 번 전달한다.
-- [ ] 동적 import 없는 고정 이름 단일-entry JS/CSS bundle을 생성한다.
-- [ ] Kotlin이 allowlisted bundled JS/CSS를 HTML에 inline해 `loadHTML`에 제공한다.
-- [ ] `.nvmrc` Node 22, `ui/` pnpm package와 lockfile을 만든다.
-- [ ] Gradle이 `pnpm install --frozen-lockfile → buildUi → syncUiResources` 순서로 실행한다.
-- [ ] UI build output을 generated resources로 복사한다.
-- [ ] `processResources/buildPlugin`이 UI build에 의존한다.
-- [ ] `pnpm --dir ui build`와 `./gradlew buildPlugin`을 통과한다.
-- [ ] plugin artifact 안에 최신 UI asset이 있음을 확인한다.
+- [x] `ready`, `expandNode`, `openSource`만 whitelist한다.
+- [x] payload size/type와 현재 session node ID를 검증한다.
+- [x] raw path/source offset/symbol ID 요청을 허용하지 않는다.
+- [x] ready 전 document 전송을 보류하고 이후 한 번 전달한다.
+- [x] 동적 import 없는 고정 이름 단일-entry JS/CSS bundle을 생성한다.
+- [x] Kotlin이 allowlisted bundled JS/CSS를 HTML에 inline해 `loadHTML`에 제공한다.
+- [x] `.nvmrc` Node 22, `ui/` pnpm package와 lockfile을 만든다.
+- [x] Gradle이 `pnpm install --frozen-lockfile → buildUi → syncUiResources` 순서로 실행한다.
+- [x] UI build output을 generated resources로 복사한다.
+- [x] `processResources/buildPlugin`이 UI build에 의존한다.
+- [x] `pnpm --dir ui build`와 `./gradlew buildPlugin`을 통과한다.
+- [x] plugin artifact 안에 최신 UI asset이 있음을 확인한다.
 - [ ] 설치된 plugin에서 Canvas `ready` 수신을 확인한다.
 - [ ] `./gradlew test --tests '*FlowBridgeTest'`를 통과한다.
 
@@ -72,15 +72,15 @@ status: draft
 
 ### P3-04. 읽기 전용 Flow Canvas
 
-- [ ] root title/signature와 source order node를 세로 표시한다.
-- [ ] internal, external, unresolved와 undocumented 상태를 구분한다.
-- [ ] internal node만 펼치기 action을 제공한다.
+- [x] root title/signature와 source order node를 세로 표시한다.
+- [x] internal, external, unresolved와 undocumented 상태를 구분한다.
+- [x] internal node만 펼치기 action을 제공한다.
 - [ ] 동일 node의 pending expand 요청을 중복 전송하지 않는다.
-- [ ] expand 결과를 현재 node 아래에 중첩한다.
+- [x] expand 결과를 현재 node 아래에 중첩한다.
 - [ ] loading, empty, analysis/expand error와 stale 상태를 표시한다.
 - [ ] 가능한 오류 상태에 재시도를 제공한다.
-- [ ] `Cmd/Ctrl + 클릭`이 node ID 기반 source intent를 보낸다.
-- [ ] Kotlin→React payload를 JavaScript 문자열에 직접 보간하지 않는다.
+- [x] `Cmd/Ctrl + 클릭`이 node ID 기반 source intent를 보낸다.
+- [x] Kotlin→React payload를 JavaScript 문자열에 직접 보간하지 않는다.
 - [ ] 분석 대상 TypeScript 저장 시 열린 flow만 새 generation으로 재분석한다.
 - [ ] drag, 자유 배치와 React Flow를 추가하지 않는다.
 - [ ] `runIde`에서 선택→표시→펼치기→소스 이동을 확인한다.
