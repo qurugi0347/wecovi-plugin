@@ -42,9 +42,9 @@ status: draft
 - [x] Kotlin `JBTree`로 Flows/Functions를 표시한다.
 - [x] group 계층과 빈 group의 `Ungrouped`를 표시한다.
 - [x] non-root Function 선택을 임시 root로 연다.
-- [ ] controller가 smart-mode read action과 EDT tree 반영을 관리한다.
+- [x] controller가 smart-mode read action과 EDT tree 반영을 관리한다.
 - [ ] generation이 지난 분석 응답은 현재 선택/document에 반영하지 않는다.
-- [ ] 선택한 symbol ID로 같은 flow Editor Tab을 열거나 재사용한다.
+- [x] 선택한 symbol ID로 같은 flow Editor Tab을 열거나 재사용한다.
 - [x] Editor가 현재 flow의 node/source/target lookup을 소유한다.
 - [x] Editor가 root/target `SmartPsiElementPointer`를 보관해 offset 변경 뒤에도 열린 flow를 재분석한다.
 - [x] JCEF 지원 환경은 bundled UI를 열고 미지원 환경은 안내한다.
@@ -75,7 +75,7 @@ status: draft
 - [x] root title/signature와 source order node를 세로 표시한다.
 - [x] internal, external, unresolved와 undocumented 상태를 구분한다.
 - [x] internal node만 펼치기 action을 제공한다.
-- [ ] 동일 node의 pending expand 요청을 중복 전송하지 않는다.
+- [x] 동일 node의 pending expand 요청을 중복 전송하지 않는다.
 - [x] expand 결과를 현재 node 아래에 중첩한다.
 - [ ] loading, empty, analysis/expand error와 stale 상태를 표시한다.
 - [ ] 가능한 오류 상태에 재시도를 제공한다.
