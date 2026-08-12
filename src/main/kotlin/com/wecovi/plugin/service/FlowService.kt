@@ -47,7 +47,9 @@ class FlowService(
 
     fun analyze(function: JSFunction): FlowDocument {
         val path = pathOf(function)
-        val root = listEntries().firstOrNull { it.symbolId == flowSymbolId(path, function) }
+        val file = requireNotNull(function.containingFile)
+        val root = CoviMetadataIndexer().index(file, projectRoot).functions
+            .firstOrNull { it.symbolId == flowSymbolId(path, function) }
             ?: FlowIndexEntry(
                 symbolId = flowSymbolId(path, function),
                 title = function.name ?: "Unnamed function",
@@ -57,8 +59,6 @@ class FlowService(
                 sourceLocation = function.sourceLocation(path),
                 isRoot = false,
             )
-        val file = requireNotNull(function.containingFile)
-
         return TypeScriptFlowAnalyzer().analyze(function, root).let { document ->
             document.copy(nodes = document.nodes.map { node -> CallTargetResolver().resolve(node, file, projectRoot) })
         }
