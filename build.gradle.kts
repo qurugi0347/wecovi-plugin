@@ -67,15 +67,9 @@ val buildUi by tasks.registering(Exec::class) {
     outputs.dir("ui/dist")
 }
 
-val syncUiResources by tasks.registering(Copy::class) {
-    dependsOn(buildUi)
-    from("ui/dist")
-    into(layout.buildDirectory.dir("generated/resources/wecovi/ui"))
-}
-
 tasks.processResources {
-    dependsOn(syncUiResources)
-    from(layout.buildDirectory.dir("generated/resources"))
+    dependsOn(buildUi)
+    from("ui/dist") { into("wecovi/ui") }
 }
 
 tasks.test {

@@ -4,6 +4,7 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorStateLevel
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -35,7 +36,7 @@ class FlowEditor(private val project: Project, private val file: FlowVirtualFile
         query = createdQuery
         component.removeAll()
         component.add(createdBrowser.component)
-        createdBrowser.loadHTML(canvasHtml(createdQuery.inject("window.wecoviPost")))
+        createdBrowser.loadHTML(canvasHtml("window.wecoviPost = payload => { ${createdQuery.inject("payload")} }"))
     }
 
     private fun sendToCanvas(json: String) {
@@ -49,8 +50,10 @@ class FlowEditor(private val project: Project, private val file: FlowVirtualFile
 
     private fun openSource(nodeId: String) {
         val location = session.source(nodeId)
-        val file = VfsUtilCore.findRelativeFile(location.path, project.baseDir) ?: error("Source file is unavailable")
-        OpenFileDescriptor(project, file, location.startOffset).navigate(true)
+        ApplicationManager.getApplication().invokeLater {
+            val sourceFile = VfsUtilCore.findRelativeFile(location.path, project.baseDir) ?: return@invokeLater
+            OpenFileDescriptor(project, sourceFile, location.startOffset).navigate(true)
+        }
     }
 
     override fun getComponent(): JComponent = component
@@ -59,7 +62,7 @@ class FlowEditor(private val project: Project, private val file: FlowVirtualFile
     override fun getState(level: FileEditorStateLevel): FileEditorState = FileEditorState.INSTANCE
     override fun setState(state: FileEditorState) = Unit
     override fun isModified() = false
-    override fun isValid() = session.isValid()
+    override fun isValid() = !project.isDisposed && file.isValid
     override fun addPropertyChangeListener(listener: PropertyChangeListener) = Unit
     override fun removePropertyChangeListener(listener: PropertyChangeListener) = Unit
     override fun dispose() { query?.dispose(); browser?.dispose() }

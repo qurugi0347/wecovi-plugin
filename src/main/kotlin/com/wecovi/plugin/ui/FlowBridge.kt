@@ -19,8 +19,8 @@ internal class FlowBridge(
         if (payload.length > MAX_PAYLOAD) return error(null, "invalid", "Message is too large")
         val message = runCatching { FlowJson.codec.parseToJsonElement(payload) as? JsonObject }.getOrNull()
             ?: return error(null, "invalid", "Invalid message")
-        val type = message["type"]?.jsonPrimitive?.content ?: return error(null, "invalid", "Missing type")
-        val nodeId = message["nodeId"]?.jsonPrimitive?.content
+        val type = message.string("type") ?: return error(null, "invalid", "Missing type")
+        val nodeId = message.string("nodeId")
         if (type !in setOf("ready", "expandNode", "openSource")) return error(nodeId, "invalid", "Unsupported message")
         return runCatching {
             ApplicationManager.getApplication().runReadAction {
@@ -54,6 +54,9 @@ internal class FlowBridge(
     }
 
     private fun message(type: String, document: String) = "{\"type\":\"$type\",\"document\":$document}"
+
+    private fun JsonObject.string(name: String): String? =
+        (this[name] as? JsonPrimitive)?.takeIf(JsonPrimitive::isString)?.content
 
     companion object { private const val MAX_PAYLOAD = 8_192 }
 }
